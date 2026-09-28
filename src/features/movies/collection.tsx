@@ -223,6 +223,13 @@ export function MovieCollection() {
                         <dt>IMDb rating</dt>
                         <dd>{movie.imdb_rating ? `${movie.imdb_rating}/10` : "Not available"}</dd>
                       </div>
+                      <div>
+                        <dt>Added by</dt>
+                        <dd>
+                          {profiles.find((p) => p.id === movie.added_by_user_id)?.display_name ??
+                            "Member"}
+                        </dd>
+                      </div>
                     </dl>
                     <p className="movie-card-description">
                       {movie.plot ?? "No description available."}

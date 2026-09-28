@@ -31,6 +31,7 @@ test("all three movie views retain voting and details and remember the choice", 
     "Director name",
     "117 min",
     "8.5/10",
+    "Abby",
   ]);
   await expect(card.locator(".movie-card-description")).toBeVisible();
   await expect(card.locator(".movie-card-description")).toHaveCSS("-webkit-line-clamp", "2");
@@ -43,6 +44,7 @@ test("all three movie views retain voting and details and remember the choice", 
     "Director name",
     "Not available",
     "Not available",
+    "Darren",
   ]);
   await page.screenshot({ path: "artifacts/movies-card-list.png", fullPage: true });
   // The padding and description areas open details, not just the poster or title.

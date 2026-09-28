@@ -101,7 +101,7 @@ export function MovieWheel() {
                       <text
                         x="300"
                         y="300"
-                        transform={`rotate(${(middle * 180) / Math.PI} 300 300) translate(115 0)`}
+                        transform={`rotate(${(middle * 180) / Math.PI} 300 300) translate(85 0)`}
                         dy=".35em"
                         fontSize={Math.min(18, 340 / segments.length)}
                         textLength={Math.min(
