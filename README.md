@@ -53,6 +53,10 @@ RLS recognizes only identities bound to the five profiles. All members can manag
 - On desktop, drag chat's left divider to resize it. The focused divider also supports Left/Right arrow keys; double-click resets its width. The layout keeps the movie column usable as the window shrinks. The selected width stays through movie/wheel navigation; mobile uses the full-width Chat panel.
 - All movie-night times are America/New_York. Skipped spring-forward times are rejected. Repeated fall-back times consistently choose the earlier occurrence and display the resulting Eastern abbreviation.
 - Wheel entries have at least two votes, appear once each, and have equal chances through rejection-sampled browser randomness. Spins hold a snapshot, generate no records or broadcasts, and offer no post-spin actions.
+- Movie sorting offers Most Votes, Least Votes, A-Z, Z-A, By Year Oldest, By Year Newest and My Votes, with alphabetical ordering within vote groups. Cards, Card List and single-line List views follow each member across devices.
+- Schedule entries open a details popup. Account Settings is wider and its avatar has an enlarged hover preview. Chat avatars show profile cards with current Online/Offline status, and chat URLs become clickable links.
+- Senders may delete their own messages for everyone. The database clears their text and attachment records atomically, retains only an empty retry marker, and queues image objects for Storage cleanup. Existing saved messages remain protected. Deleted history is reconciled after reconnect.
+- The empty wheel remains visible with Spin disabled. Decorative collection, schedule, wheel and empty-chat copy has been removed.
 
 ## Upload behavior and maintenance
 

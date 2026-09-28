@@ -12,14 +12,19 @@ export const votedFor = (movie: Movie, memberId: string) =>
 
 export function sortMovies(movies: Movie[], mode: SortMode, memberId: string): Movie[] {
   const title = (a: Movie, b: Movie) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
-  const votes = (a: Movie, b: Movie) => b.movie_votes.length - a.movie_votes.length || title(a, b);
   return [...movies].sort((a, b) => {
     if (mode === "alphabetical") return title(a, b);
-    if (mode === "year")
-      return (b.release_year ?? -Infinity) - (a.release_year ?? -Infinity) || title(a, b);
+    if (mode === "reverse-alphabetical") return title(b, a);
+    if (mode === "year" || mode === "year-ascending") {
+      if (a.release_year === null) return b.release_year === null ? title(a, b) : 1;
+      if (b.release_year === null) return -1;
+      const years = a.release_year - b.release_year;
+      return (mode === "year-ascending" ? years : -years) || title(a, b);
+    }
     if (mode === "my-votes")
-      return Number(votedFor(b, memberId)) - Number(votedFor(a, memberId)) || votes(a, b);
-    return votes(a, b);
+      return Number(votedFor(b, memberId)) - Number(votedFor(a, memberId)) || title(a, b);
+    const votes = a.movie_votes.length - b.movie_votes.length;
+    return (mode === "least-votes" ? votes : -votes) || title(a, b);
   });
 }
 

@@ -116,12 +116,11 @@ export function WorkspaceProvider({
     );
     channel.on(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "chat_messages" },
+      { event: "*", schema: "public", table: "chat_messages" },
       (payload) => {
-        if (typeof payload.new.id === "string")
-          setChatInsertIds((ids) =>
-            ids.includes(payload.new.id) ? ids : [...ids, payload.new.id],
-          );
+        const id = "id" in payload.new ? payload.new.id : undefined;
+        if (typeof id === "string")
+          setChatInsertIds((ids) => (ids.includes(id) ? ids : [...ids, id]));
         setChatVersion((v) => v + 1);
       },
     );

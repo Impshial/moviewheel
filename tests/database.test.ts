@@ -1,5 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
+import { SORTS, MOVIE_VIEWS } from "@/lib/types";
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from "vitest";
 
 let db: PGlite;
@@ -78,12 +79,9 @@ beforeAll(async () => {
     grant select,insert on storage.objects,realtime.messages to authenticated;
     create publication supabase_realtime;
   `);
-  await db.exec(
-    await readFile(
-      new URL("../supabase/migrations/202609270001_movie_wheel.sql", import.meta.url),
-      "utf8",
-    ),
-  );
+  const migrations = new URL("../supabase/migrations/", import.meta.url);
+  for (const file of (await readdir(migrations)).filter((file) => file.endsWith(".sql")).sort())
+    await db.exec(await readFile(new URL(file, migrations), "utf8"));
   for (let i = 0; i < 5; i++)
     await db.query("insert into auth.users values($1,$2)", [
       authIds[i],
@@ -98,12 +96,86 @@ beforeEach(async () => {
     "truncate public.movies,public.movie_nights,public.chat_messages,public.upload_objects,public.omdb_cache,storage.objects cascade",
   );
   await db.exec(
-    "update public.user_profiles set avatar_bucket=null,avatar_path=null,avatar_option_id=null; update storage.buckets set file_size_limit=null",
+    "update public.user_profiles set avatar_bucket=null,avatar_path=null,avatar_option_id=null,preferred_movie_sort='most-votes'; update storage.buckets set file_size_limit=null",
   );
   await cacheMovie();
 });
 
 describe("actual PostgreSQL migration and atomic rules", () => {
+  it.each(Object.keys(MOVIE_VIEWS))(
+    "persists the %s movie view for only the caller",
+    async (view) => {
+      await db.exec("update public.user_profiles set preferred_movie_view='cards'");
+      await member(0, "select public.set_movie_view($1)", [view]);
+      expect(
+        (
+          await db.query<{ preferred_movie_view: string }>(
+            "select preferred_movie_view from public.user_profiles order by id",
+          )
+        ).rows.map((row) => row.preferred_movie_view),
+      ).toEqual([view, "cards", "cards", "cards", "cards"]);
+      await expect(member(0, "select public.set_movie_view('invalid')")).rejects.toThrow();
+      await expect(member(8, "select public.set_movie_view('list')")).rejects.toThrow(
+        "authentication required",
+      );
+    },
+  );
+  it("deletes only the sender's message, detaches images, and prevents retry resurrection", async () => {
+    const upload = await staged(0);
+    const key = crypto.randomUUID();
+    const [{ id }] = await member<{ id: string }>(
+      0,
+      "select public.send_message($1,'remove this',$2) id",
+      [key, [upload]],
+    );
+    await expect(member(1, "select public.delete_message($1)", [id])).rejects.toThrow("your own");
+    await expect(member(8, "select public.delete_message($1)", [id])).rejects.toThrow(
+      "authentication required",
+    );
+    await expect(member(0, "delete from public.chat_messages where id=$1", [id])).rejects.toThrow(
+      "permission denied",
+    );
+    const [{ ids }] = await member<{ ids: string[] }>(0, "select public.delete_message($1) ids", [
+      id,
+    ]);
+    expect(ids).toEqual([upload]);
+    const [{ message_text, deleted_at }] = await member(
+      1,
+      "select * from public.chat_messages where id=$1",
+      [id],
+    );
+    expect(message_text).toBeNull();
+    expect(deleted_at).toBeTruthy();
+    expect(
+      await member(1, "select * from public.chat_attachments where message_id=$1", [id]),
+    ).toEqual([]);
+    expect(
+      (await db.query("select state from public.upload_objects where id=$1", [upload])).rows[0],
+    ).toMatchObject({ state: "deleting" });
+    expect(await member(0, "select public.delete_message($1) ids", [id])).toEqual([{ ids: [] }]);
+    expect(
+      await member(0, "select public.send_message($1,'remove this',$2) id", [key, [upload]]),
+    ).toEqual([{ id }]);
+    expect(await member(1, "select * from public.chat_messages where deleted_at is null")).toEqual(
+      [],
+    );
+  });
+  it.each(Object.keys(SORTS))("persists the %s preference for only the caller", async (sort) => {
+    await member(0, "select public.update_preferences('#123456',$1)", [sort]);
+    const { rows } = await db.query<{ preferred_movie_sort: string }>(
+      "select preferred_movie_sort from public.user_profiles order by id",
+    );
+    expect(rows.map((row) => row.preferred_movie_sort)).toEqual([
+      sort,
+      "most-votes",
+      "most-votes",
+      "most-votes",
+      "most-votes",
+    ]);
+    await expect(
+      member(0, "select public.update_preferences('#123456','invalid')"),
+    ).rejects.toThrow();
+  });
   it("creates exactly five seeded identities and rejects account reclaims", async () => {
     expect((await db.query("select * from public.user_profiles")).rows).toHaveLength(5);
     await expect(

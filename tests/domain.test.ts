@@ -15,7 +15,7 @@ import {
 import { sessionCookieOptions } from "@/lib/supabase/cookies";
 import { TaskQueue } from "@/lib/queue";
 import { checkFileSize, imageType } from "@/lib/uploads";
-import type { Movie } from "@/lib/types";
+import type { Movie, SortMode } from "@/lib/types";
 
 const metadata = mapOmdb({
   imdbID: "tt1234567",
@@ -57,14 +57,20 @@ describe("collection rules", () => {
     movie("b", "Bravo", ["a", "b", "c"], 1990),
     movie("a", "Alpha", ["a", "b", "c"], 2022),
     movie("c", "Charlie", ["b"], null),
+    movie("e", "Echo", ["a", "b"], 1990),
+    movie("d", "Delta", [], 2022),
   ];
-  it("sorts without mutating shared state", () => {
-    expect(sortMovies(movies, "most-votes", "b").map((m) => m.id)).toEqual(["a", "b", "c"]);
-    expect(sortMovies(movies, "alphabetical", "b").map((m) => m.id)).toEqual(["a", "b", "c"]);
-    expect(sortMovies(movies, "year", "b").map((m) => m.id)).toEqual(["a", "b", "c"]);
-    expect(sortMovies(movies, "my-votes", "c").map((m) => m.id)).toEqual(["a", "b", "c"]);
-    expect(sortMovies(movies, "my-votes", "b")[2].id).toBe("c");
-    expect(movies[0].id).toBe("b");
+  it.each<[SortMode, string[]]>([
+    ["most-votes", ["a", "b", "e", "c", "d"]],
+    ["least-votes", ["d", "c", "e", "a", "b"]],
+    ["alphabetical", ["a", "b", "c", "d", "e"]],
+    ["reverse-alphabetical", ["e", "d", "c", "b", "a"]],
+    ["year-ascending", ["b", "e", "a", "d", "c"]],
+    ["year", ["a", "d", "b", "e", "c"]],
+    ["my-votes", ["a", "b", "c", "e", "d"]],
+  ])("sorts %s with alphabetical ties and unknown years last", (mode, expected) => {
+    expect(sortMovies(movies, mode, "b").map((m) => m.id)).toEqual(expected);
+    expect(movies.map((m) => m.id)).toEqual(["b", "a", "c", "e", "d"]);
   });
   it("puts personal votes first even when another movie has more total votes", () => {
     expect(

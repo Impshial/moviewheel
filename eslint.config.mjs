@@ -9,6 +9,7 @@ export default defineConfig([
   { rules: { "@next/next/no-img-element": "off" } },
   globalIgnores([
     ".next/**",
+    ".next-e2e/**",
     "coverage/**",
     "playwright-report/**",
     "test-results/**",

@@ -29,35 +29,39 @@ This plan supplements [the master specification](docs/master-specification.md). 
 
 ## Movies, OMDb and schedule
 
-- The homepage contains every movie in a responsive poster grid, fetching beyond API page limits. Each card has title/year/adder/vote count, vote toggle, eligibility and deletion with confirmation. Movie details remain available.
-- Persist all four sorting modes: Most Votes, Alphabetical, By Year (unknown last), My Votes.
+- The homepage contains every movie in Cards, Card List, or single-line List view, fetching beyond API page limits. Persist the selected view per member. Every view retains voting, movie details and deletion. Include Add a Movie beside Sort and view icons below it; omit the collection captions.
+- Persist seven sorting modes: Most Votes, Least Votes, A-Z, Z-A, By Year Oldest, By Year Newest, My Votes. Vote counts and personal-vote groups use alphabetical ties; unknown years sort last in both directions.
 - Debounce OMDb search, cancel stale results, paginate and request only movie results. Cache search/detail enrichment in Supabase and save normalized metadata. Respect the configured free-key daily allowance. Missing director/poster information uses a fallback and does not block valid movies.
 - `add_movie` serializes by IMDb ID and atomically creates a new movie plus the adding member's vote. Return distinct visible outcomes: new movie added; existing movie and vote added; existing movie and already voted. Unique constraints prevent duplicates under concurrency.
 - Each member may vote for multiple movies, once per movie, and remove only their own vote. Deleting a movie cascades votes and preserves schedule snapshots.
 - Schedule dialogs support title, Eastern date/time, one or more hosts and zero/multiple selected movies; no selected movie displays TBD. Any member can edit/delete any entry. Realtime refreshes shared changes.
+- Clicking a schedule entry opens its date, Eastern time, hosts and saved movie snapshots in a details popup; Edit/Delete remain separate controls. Remove the decorative schedule footer.
 
 ## Wheel and shared navigation
 
 - `/wheel` occupies the central page within the persistent layout, with schedule left and chat right. Navigation preserves the chat text, selected/uploading images, scroll position and subscriptions. Mobile panels stay mounted.
 - Show one equal-size colorful segment per movie with at least two votes, a pale rim, radial labels, fixed pointer and center Spin control. Votes never weight the probability.
+- Keep an unlabeled wheel visible with disabled Spin when no movies qualify. Omit the wheel eyebrow, descriptive tagline and empty-state sparkle icon.
 - Capture eligibility at spin start; select with unbiased browser randomness and animate to the exact corresponding segment. Finish against the snapshot, then apply subsequent collection changes. Support zero/one eligible movie and reduced motion.
 - Spins create no database/history records, notifications, synchronized animation, scheduling, deletion or watched-state changes. Display the local selected movie with no post-spin actions.
 
 ## Chat, uploads and transient signals
 
 - White background, compact continuous messages, circular avatars and readable colored names; no speech bubbles. Load the latest 100 messages with older pagination, stable ordering, reconnect catch-up and duplicate suppression. Preserve upward scroll and show a new-message indicator instead of forcing scrolling.
+- Render web URLs as safe clickable links in new and historical messages. Leave an empty conversation blank. Hover/focus/tap cards show the current avatar, name and Online/Offline status in the member strip and history. Account Settings uses a wider dialog and a larger version of this avatar preview.
+- Only senders can delete their own chat messages, enforced by an authenticated database function. Clear text and detach attachments atomically; retain an empty idempotency tombstone so delayed send retries cannot recreate deleted content. Refresh deletions on connected clients and on reconnect. Use the Storage cleanup path for detached images, with maintenance retry after interruption.
 - Aggregate Presence connections by authenticated member across tabs/devices. Closing one connection leaves the member online if another survives. Realtime expires disconnected connections; stale typing metadata also expires locally.
 - Typing shows only other users. Send changes/occasional activity updates, animate `.`, `..`, `...` locally and clear on inactivity, send, blur, logout or disconnect.
 - Accept computer file selection and clipboard paste; text-only, image-only and mixed messages with multiple JPEG/PNG/WebP/GIF images. **No fixed application attachment-count cap and no arbitrary 5 MB cap.** Use a two-worker queue; keep every selected item visible/removable with useful errors and retry.
 - **Upload architecture:** image bytes go directly browser → authenticated Supabase Storage. Use standard uploads for small images and resumable TUS for larger/interrupted uploads according to provider guidance. Vercel routes carry authorization/configuration/cleanup metadata, not image payloads. Inspect actual project/bucket constraints during setup and align validation with them.
 - Finish all required uploads before a transactional RPC publishes message + attachment records together. Retain the draft on failure. Stable per-submission IDs prevent duplicate messages on retries, including a lost success response.
-- Registered staging objects and transaction locks separate pending/attached/deleting states. Cleanup claims only abandoned, unreferenced uploads; it cannot remove committed message files. Active drafts renew their lease. A bounded maintenance command removes abandoned objects through the Storage API.
+- Registered staging objects and transaction locks separate pending/attached/deleting states. Cleanup claims abandoned uploads and attachments detached by message deletion; it cannot remove files still attached to saved messages. Active drafts renew their lease. A bounded maintenance command removes unreferenced objects through the Storage API.
 
 ## Acceptance checks
 
 - First claim, configured login, incorrect PIN, leading zeroes, numeric validation, refresh, logout/current-session behavior and Change PIN; simultaneous claims leave exactly one successful account/password.
 - Another member can delete the creator's movie or edit the creator's schedule, while cross-member votes/settings/PIN changes fail. Unrelated authenticated accounts cannot access shared content.
-- Concurrent duplicate movie additions yield one movie and exactly the expected votes and notification for each request. Verify all four sorts and persisted preferences.
+- Concurrent duplicate movie additions yield one movie and exactly the expected votes and notification for each request. Verify all seven sorts and persisted preferences.
 - More than four images and an image larger than 5 MB succeed when the provider limits allow; unsupported formats/provider oversize produce clear errors. Verify paste, image-only/mixed messages, failed upload, safe retry after ambiguous finalization, refreshed old media URLs and new-device reads.
 - Multiple-tab presence, disconnect/typing cleanup, current avatar/color in older messages, pagination/scroll behavior and uninterrupted chat state across wheel navigation.
 - At least two votes controls eligibility, including a drop to one; one entry per movie and equal probability; selected movie matches final pointer; zero spin-related database writes.

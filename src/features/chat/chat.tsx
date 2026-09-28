@@ -1,20 +1,25 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowDown, ImagePlus, MessageCircle, Send, X, RotateCcw } from "lucide-react";
+import { ArrowDown, ImagePlus, MessageCircle, Send, X, RotateCcw, Trash2 } from "lucide-react";
 import { useWorkspace } from "@/features/workspace/provider";
 import { useMessages } from "./use-messages";
 import { useUploads } from "./use-uploads";
-import { Avatar, StoredImage } from "@/components/ui/media";
-import { Dialog } from "@/components/ui/dialog";
+import { StoredImage } from "@/components/ui/media";
+import { ProfileHoverCard } from "./profile-hover-card";
+import { MessageText } from "./message-text";
+import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
+import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/domain";
 import type { Attachment } from "@/lib/types";
 
 export function ChatPanel() {
-  const { profiles, online, typing, setTyping, supabase, connected } = useWorkspace();
-  const { messages, loading, hasOlder, loadingOlder, older, refresh } = useMessages();
+  const { me, profiles, online, typing, setTyping, supabase, connected, notice } = useWorkspace();
+  const { messages, loading, hasOlder, loadingOlder, older, refresh, discard } = useMessages();
   const uploads = useUploads("chat-images");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
   const [error, setError] = useState("");
   const [lightbox, setLightbox] = useState<Attachment | null>(null);
   const [hasNew, setHasNew] = useState(false);
@@ -37,7 +42,10 @@ export function ChatPanel() {
       prepend.current = null;
     } else if (firstLoad.current || nearBottom.current) {
       el.scrollTop = el.scrollHeight;
-    } else if (messages.at(-1)?.id !== previousLast.current) {
+    } else if (
+      messages.at(-1)?.id !== previousLast.current &&
+      messages.some((message) => message.id === previousLast.current)
+    ) {
       // Defer the notification update outside the synchronous layout measurement.
       queueMicrotask(() => setHasNew(true));
     }
@@ -96,6 +104,29 @@ export function ChatPanel() {
   }
   const names = profiles.filter((p) => typing.has(p.id)).map((p) => p.display_name);
   const locked = sending || Boolean(submission);
+  const viewedImage =
+    lightbox && messages.some((message) => message.id === lightbox.message_id) ? lightbox : null;
+  async function deleteMessage() {
+    if (!deleting || removing) return;
+    setRemoving(true);
+    try {
+      const { data, error } = await supabase.rpc("delete_message", { p_message_id: deleting });
+      if (error) throw error;
+      discard([deleting]);
+      setDeleting(null);
+      if (lightbox?.message_id === deleting) setLightbox(null);
+      if (data?.length) {
+        void api("/api/uploads/cleanup", {
+          method: "POST",
+          body: JSON.stringify({ ids: data }),
+        }).catch(() => notice("Message deleted. Image cleanup will retry during maintenance."));
+      }
+    } catch (error) {
+      notice(errorMessage(error, "Could not delete the message. Please try again."), true);
+    } finally {
+      setRemoving(false);
+    }
+  }
   return (
     <section className="chat-panel">
       <div className="panel-heading">
@@ -109,17 +140,12 @@ export function ChatPanel() {
       </div>
       <div className="online-members" aria-label="Online members">
         {profiles.map((profile) => (
-          <span
+          <ProfileHoverCard
             key={profile.id}
-            className={`member-presence ${online.has(profile.id) ? "is-online" : ""}`}
-            title={`${profile.display_name} · ${online.has(profile.id) ? "Online" : profile.last_seen_at ? `Last seen ${new Date(profile.last_seen_at).toLocaleString()}` : "Offline"}`}
-          >
-            <Avatar profile={profile} small />
-            <span className="presence-dot" />
-            <span className="sr-only">
-              {profile.display_name}: {online.has(profile.id) ? "Online" : "Offline"}
-            </span>
-          </span>
+            profile={profile}
+            online={online.has(profile.id)}
+            showPresence
+          />
         ))}
         <span>{online.size} online</span>
       </div>
@@ -148,19 +174,12 @@ export function ChatPanel() {
               Loading the conversation…
             </p>
           )}
-          {!loading && !messages.length && (
-            <div className="chat-empty">
-              <MessageCircle size={30} strokeWidth={1} />
-              <h3>Pull up a seat.</h3>
-              <p>The conversation starts here.</p>
-            </div>
-          )}
           {messages.map((message) => {
             const profile = profiles.find((p) => p.id === message.user_id);
             if (!profile) return null;
             return (
               <div className="chat-message" key={message.id} data-message-id={message.id}>
-                <Avatar profile={profile} small />
+                <ProfileHoverCard profile={profile} online={online.has(profile.id)} />
                 <div className="message-content">
                   <p>
                     <span className="chat-author" style={{ color: profile.chat_name_color }}>
@@ -169,7 +188,7 @@ export function ChatPanel() {
                       )}
                       {profile.display_name}:
                     </span>{" "}
-                    <span className="message-text">{message.message_text}</span>
+                    <MessageText text={message.message_text} />
                   </p>
                   {!!message.chat_attachments.length && (
                     <div className="message-images">
@@ -201,6 +220,16 @@ export function ChatPanel() {
                     })}
                   </time>
                 </div>
+                {message.user_id === me.id && (
+                  <button
+                    type="button"
+                    className="delete-message"
+                    aria-label="Delete message"
+                    onClick={() => setDeleting(message.id)}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
               </div>
             );
           })}
@@ -343,18 +372,28 @@ export function ChatPanel() {
           </p>
         )}
       </form>
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+        title="Delete message?"
+        description="Delete this message and its attachments for everyone? This cannot be undone."
+        busy={removing}
+        onConfirm={() => void deleteMessage()}
+      />
       <Dialog
-        open={Boolean(lightbox)}
+        open={Boolean(viewedImage)}
         onOpenChange={(open) => {
           if (!open) setLightbox(null);
         }}
         title="Shared image"
         wide
       >
-        {lightbox && (
+        {viewedImage && (
           <StoredImage
-            bucket={lightbox.storage_bucket}
-            path={lightbox.storage_path}
+            bucket={viewedImage.storage_bucket}
+            path={viewedImage.storage_path}
             alt="Full-size shared image"
             className="lightbox-image"
           />

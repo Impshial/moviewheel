@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useWorkspace } from "@/features/workspace/provider";
 import { isEligible, randomIndex, targetRotation, WHEEL_MIN_VOTES } from "@/lib/domain";
 import type { Movie } from "@/lib/types";
@@ -28,6 +28,9 @@ export function MovieWheel() {
     .filter(isEligible)
     .sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id));
   const entries = spinning && snapshot ? snapshot : live;
+  const segments = entries.length
+    ? entries
+    : COLORS.map((_, index) => ({ id: `empty-${index}`, title: "" }));
   const restingWinner = winner ? entries.findIndex((movie) => movie.id === winner.id) : -1;
   const visibleRotation =
     !spinning && restingWinner >= 0
@@ -63,20 +66,9 @@ export function MovieWheel() {
         <ArrowLeft size={16} />
         Movies to Watch
       </Link>
-      <p className="eyebrow">LEAVE IT TO CHANCE</p>
       <h1>Let the wheel decide.</h1>
-      <p className="wheel-description">
-        Every movie has its moment. {live.length} eligible {live.length === 1 ? "pick" : "picks"},
-        equal chances.
-      </p>
       {loading ? (
         <p role="status">Loading the wheel…</p>
-      ) : entries.length === 0 ? (
-        <div className="wheel-empty">
-          <Sparkles size={44} />
-          <h2>No movies have enough votes yet.</h2>
-          <p>A movie needs at least {WHEEL_MIN_VOTES} votes to appear on the wheel.</p>
-        </div>
       ) : (
         <>
           <div className="wheel-stage">
@@ -90,9 +82,9 @@ export function MovieWheel() {
                 transitionDuration: spinning ? `${duration}ms` : "0ms",
               }}
             >
-              {entries.map((movie, index) => {
-                const start = (index * 2 * Math.PI) / entries.length - Math.PI / 2;
-                const end = ((index + 1) * 2 * Math.PI) / entries.length - Math.PI / 2;
+              {segments.map((movie, index) => {
+                const start = (index * 2 * Math.PI) / segments.length - Math.PI / 2;
+                const end = ((index + 1) * 2 * Math.PI) / segments.length - Math.PI / 2;
                 const middle = (start + end) / 2;
                 const color = COLORS[index % COLORS.length];
                 const path = `M300 300 L${300 + 286 * Math.cos(start)} ${300 + 286 * Math.sin(start)} A286 286 0 ${end - start > Math.PI ? 1 : 0} 1 ${300 + 286 * Math.cos(end)} ${300 + 286 * Math.sin(end)} Z`;
@@ -100,28 +92,30 @@ export function MovieWheel() {
                   movie.title.length > 27 ? `${movie.title.slice(0, 25)}…` : movie.title;
                 return (
                   <g key={movie.id}>
-                    {entries.length === 1 ? (
+                    {segments.length === 1 ? (
                       <circle cx="300" cy="300" r="286" fill={color} />
                     ) : (
                       <path d={path} fill={color} />
                     )}
-                    <text
-                      x="300"
-                      y="300"
-                      transform={`rotate(${(middle * 180) / Math.PI} 300 300) translate(115 0)`}
-                      dy=".35em"
-                      fontSize={Math.min(18, 340 / entries.length)}
-                      textLength={Math.min(
-                        155,
-                        label.length * Math.min(18, 340 / entries.length) * 0.6,
-                      )}
-                      lengthAdjust="spacingAndGlyphs"
-                      textAnchor="start"
-                      fill="#18202d"
-                      fontWeight="700"
-                    >
-                      {label}
-                    </text>
+                    {movie.title && (
+                      <text
+                        x="300"
+                        y="300"
+                        transform={`rotate(${(middle * 180) / Math.PI} 300 300) translate(115 0)`}
+                        dy=".35em"
+                        fontSize={Math.min(18, 340 / segments.length)}
+                        textLength={Math.min(
+                          155,
+                          label.length * Math.min(18, 340 / segments.length) * 0.6,
+                        )}
+                        lengthAdjust="spacingAndGlyphs"
+                        textAnchor="start"
+                        fill="#18202d"
+                        fontWeight="700"
+                      >
+                        {label}
+                      </text>
+                    )}
                   </g>
                 );
               })}
@@ -130,22 +124,30 @@ export function MovieWheel() {
             <button
               className="spin-button"
               onClick={spin}
-              disabled={spinning}
+              disabled={spinning || !entries.length}
               aria-label={spinning ? "Wheel spinning" : "Spin the wheel"}
             >
               {spinning ? "…" : "Spin"}
             </button>
           </div>
-          <details className="wheel-entries">
-            <summary>
-              See the {entries.length} {entries.length === 1 ? "movie" : "movies"} on the wheel
-            </summary>
-            <ul>
-              {entries.map((m) => (
-                <li key={m.id}>{m.title}</li>
-              ))}
-            </ul>
-          </details>
+          {entries.length > 0 && (
+            <details className="wheel-entries">
+              <summary>
+                See the {entries.length} {entries.length === 1 ? "movie" : "movies"} on the wheel
+              </summary>
+              <ul>
+                {entries.map((m) => (
+                  <li key={m.id}>{m.title}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {!entries.length && (
+            <div className="wheel-empty">
+              <h2>No movies have enough votes yet.</h2>
+              <p>A movie needs at least {WHEEL_MIN_VOTES} votes to appear on the wheel.</p>
+            </div>
+          )}
         </>
       )}
       <div className="wheel-result" aria-live="polite">

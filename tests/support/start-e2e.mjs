@@ -1,7 +1,7 @@
 // Isolated test-only Supabase protocol fixture. The real application has no test/demo bypass.
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { createHmac, randomUUID } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
 import { WebSocketServer } from "ws";
@@ -21,12 +21,9 @@ await db.exec(`
  grant select,insert on storage.objects,realtime.messages to authenticated;
  create publication supabase_realtime;
 `);
-await db.exec(
-  await readFile(
-    new URL("../../supabase/migrations/202609270001_movie_wheel.sql", import.meta.url),
-    "utf8",
-  ),
-);
+const migrations = new URL("../../supabase/migrations/", import.meta.url);
+for (const file of (await readdir(migrations)).filter((file) => file.endsWith(".sql")).sort())
+  await db.exec(await readFile(new URL(file, migrations), "utf8"));
 await db.exec("update storage.buckets set file_size_limit=10485760");
 const auth = new Map();
 const tokens = new Map();
@@ -174,7 +171,7 @@ const server = createServer(async (req, res) => {
       files.clear();
       calls.length = 0;
       await db.exec(
-        "truncate public.movies,public.movie_nights,public.chat_messages,public.upload_objects,public.omdb_cache,storage.objects cascade; update public.user_profiles set auth_user_id=null,avatar_bucket=null,avatar_path=null,avatar_option_id=null,preferred_movie_sort='most-votes'; delete from auth.users;",
+        "truncate public.movies,public.movie_nights,public.chat_messages,public.upload_objects,public.omdb_cache,storage.objects cascade; update public.user_profiles set auth_user_id=null,avatar_bucket=null,avatar_path=null,avatar_option_id=null,preferred_movie_sort='most-votes',preferred_movie_view='cards'; delete from auth.users;",
       );
       if (body.claimed)
         for (const name of ["abby", "darren", "elisabeth", "hannah", "paul"]) {
@@ -412,13 +409,18 @@ const server = createServer(async (req, res) => {
         set_vote: ["movie_votes"],
         save_movie_night: ["movie_nights"],
         send_message: ["chat_messages"],
+        delete_message: ["chat_messages"],
         update_preferences: ["user_profiles"],
+        set_movie_view: ["user_profiles"],
         set_avatar: ["user_profiles"],
       };
       (changes[rpc[1]] || []).forEach((table) =>
         changed(
           table,
-          rpc[1] === "update_preferences" || rpc[1] === "set_avatar" ? "UPDATE" : "INSERT",
+          ["update_preferences", "set_avatar", "delete_message"].includes(rpc[1])
+            ? "UPDATE"
+            : "INSERT",
+          rpc[1] === "delete_message" ? { id: body.p_message_id } : {},
         ),
       );
       return;
@@ -430,7 +432,9 @@ const server = createServer(async (req, res) => {
       const where = [];
       for (const [key, value] of url.searchParams) {
         if (!/^[a-z_]+$/.test(key)) continue;
-        if (value.startsWith("eq.")) {
+        if (value === "is.null") {
+          where.push(`t.${key} is null`);
+        } else if (value.startsWith("eq.")) {
           params.push(value.slice(3));
           where.push(`t.${key}=$${params.length}`);
         } else if (value.startsWith("in.")) {
@@ -593,6 +597,7 @@ const child = spawn(
       PIN_AUTH_SECRET: "movie-wheel-test-only-secret-do-not-deploy",
       OMDB_API_KEY: "test-key-not-used",
       NEXT_TELEMETRY_DISABLED: "1",
+      MOVIE_WHEEL_E2E: "1",
     },
   },
 );

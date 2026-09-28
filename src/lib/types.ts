@@ -2,11 +2,16 @@ export const MEMBERS = ["Abby", "Darren", "Elisabeth", "Hannah", "Paul"] as cons
 export type MemberName = (typeof MEMBERS)[number];
 export const SORTS = {
   "most-votes": "Most Votes",
-  alphabetical: "Alphabetical",
-  year: "By Year",
+  "least-votes": "Least Votes",
+  alphabetical: "A-Z",
+  "reverse-alphabetical": "Z-A",
+  "year-ascending": "By Year Oldest",
+  year: "By Year Newest",
   "my-votes": "My Votes",
 } as const;
 export type SortMode = keyof typeof SORTS;
+export const MOVIE_VIEWS = { cards: "Cards", "card-list": "Card List", list: "List" } as const;
+export type MovieView = keyof typeof MOVIE_VIEWS;
 export type Profile = {
   id: string;
   member_key: string;
@@ -17,6 +22,7 @@ export type Profile = {
   avatar_option_id: string | null;
   chat_name_color: string;
   preferred_movie_sort: SortMode;
+  preferred_movie_view: MovieView;
   last_seen_at: string | null;
   updated_at: string;
 };
@@ -74,6 +80,7 @@ export type ChatMessage = {
   user_id: string;
   client_message_id: string;
   message_text: string | null;
+  deleted_at: string | null;
   created_at: string;
   chat_attachments: Attachment[];
 };

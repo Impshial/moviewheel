@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
-import { Film, Heart, Plus, Trash2, Check } from "lucide-react";
+import { Film, Heart, Plus, Trash2, Check, LayoutGrid, Rows3, List } from "lucide-react";
 import { useWorkspace } from "@/features/workspace/provider";
 import { Poster } from "@/components/ui/media";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { MovieDetails } from "./details";
-import { SORTS, type Movie, type SortMode } from "@/lib/types";
+import { SORTS, MOVIE_VIEWS, type Movie, type MovieView, type SortMode } from "@/lib/types";
 import { errorMessage, isEligible, sortMovies, votedFor, WHEEL_MIN_VOTES } from "@/lib/domain";
+
+const VIEW_ICONS = { cards: LayoutGrid, "card-list": Rows3, list: List };
 
 export function MovieCollection() {
   const { movies, me, profiles, loading, supabase, refresh, notice, openAddMovie } = useWorkspace();
@@ -14,6 +16,12 @@ export function MovieCollection() {
   const [deleting, setDeleting] = useState<Movie | null>(null);
   const [busy, setBusy] = useState(false);
   const [pendingVotes, setPendingVotes] = useState<Set<string>>(new Set());
+  const view = me.preferred_movie_view ?? "cards";
+  async function changeView(view: MovieView) {
+    const { error } = await supabase.rpc("set_movie_view", { p_view: view });
+    if (error) notice(errorMessage(error), true);
+    else await refresh();
+  }
   async function vote(movie: Movie) {
     setPendingVotes((prev) => new Set(prev).add(movie.id));
     try {
@@ -61,28 +69,50 @@ export function MovieCollection() {
     <section className="collection">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">THE SHARED COLLECTION</p>
           <h1>
             Movies to Watch <span className="count-badge">{movies.length}</span>
           </h1>
         </div>
-        <label className="sort-control">
-          Sort
-          <select
-            value={me.preferred_movie_sort}
-            onChange={(e) => void changeSort(e.target.value as SortMode)}
-          >
-            {Object.entries(SORTS).map(([key, label]) => (
-              <option value={key} key={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="collection-actions">
+          <button className="button primary" onClick={openAddMovie}>
+            <Plus size={16} />
+            Add a Movie
+          </button>
+          <label className="sort-control">
+            Sort
+            <select
+              disabled={loading}
+              value={me.preferred_movie_sort}
+              onChange={(e) => void changeSort(e.target.value as SortMode)}
+            >
+              {Object.entries(SORTS).map(([key, label]) => (
+                <option value={key} key={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
-      <div className="collection-caption">
-        <span>A few good picks. One great movie night.</span>
-        <span>{movies.filter(isEligible).length} on the wheel</span>
+      <div className="collection-toolbar">
+        <div className="movie-view-controls" role="group" aria-label="Movie view">
+          {Object.entries(MOVIE_VIEWS).map(([key, label]) => {
+            const Icon = VIEW_ICONS[key as MovieView];
+            return (
+              <button
+                key={key}
+                type="button"
+                title={label}
+                aria-label={label}
+                aria-pressed={view === key}
+                disabled={loading}
+                onClick={() => void changeView(key as MovieView)}
+              >
+                <Icon size={17} aria-hidden="true" />
+              </button>
+            );
+          })}
+        </div>
       </div>
       {loading ? (
         <div className="poster-grid" aria-label="Loading movies">
@@ -108,7 +138,15 @@ export function MovieCollection() {
           </button>
         </div>
       ) : (
-        <div className="poster-grid">
+        <div
+          className={
+            view === "cards"
+              ? "poster-grid"
+              : view === "card-list"
+                ? "movie-card-list"
+                : "movie-list"
+          }
+        >
           {sortMovies(movies, me.preferred_movie_sort, me.id).map((movie) => {
             const voted = votedFor(movie, me.id);
             const count = movie.movie_votes.length;
@@ -136,14 +174,23 @@ export function MovieCollection() {
                     </span>
                   )}
                 </div>
-                <button className="movie-title-button" onClick={() => setSelected(movie)}>
+                <button
+                  className="movie-title-button"
+                  title={movie.title}
+                  onClick={() => setSelected(movie)}
+                >
                   <h2>{movie.title}</h2>
                 </button>
                 <p className="movie-meta">
                   {movie.release_year ?? "Year unknown"}
-                  <span>·</span>
-                  {profiles.find((p) => p.id === movie.added_by_user_id)?.display_name ?? "Member"}
-                  &apos;s pick
+                  {view !== "list" && (
+                    <>
+                      <span>·</span>
+                      {profiles.find((p) => p.id === movie.added_by_user_id)?.display_name ??
+                        "Member"}
+                      &apos;s pick
+                    </>
+                  )}
                 </p>
                 <div className="movie-voting">
                   <button

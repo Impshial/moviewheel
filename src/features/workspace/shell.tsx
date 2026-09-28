@@ -51,9 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="app-header">
         <Link className="brand" href="/" onClick={() => setPanel("movies")}>
           <img src="/icon.svg" alt="" />
-          <span>
-            Movie Wheel<span className="brand-dot">.</span>
-          </span>
+          <span>Movie Wheel</span>
         </Link>
         <div className="header-actions">
           <button className="button secondary add-movie-button" onClick={openAddMovie}>

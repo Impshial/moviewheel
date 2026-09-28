@@ -4,6 +4,7 @@ import { CalendarDays, Plus, Pencil, Trash2, Clock3, Users } from "lucide-react"
 import { DateTime } from "luxon";
 import { useWorkspace } from "@/features/workspace/provider";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
+import { Poster } from "@/components/ui/media";
 import { easternInput, easternToUtc, errorMessage, formatNight, TIMEZONE } from "@/lib/domain";
 import type { MovieNight } from "@/lib/types";
 
@@ -13,6 +14,8 @@ export function SchedulePanel() {
   const [deleting, setDeleting] = useState<MovieNight | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPast, setShowPast] = useState(false);
+  const [viewing, setViewing] = useState<string | null>(null);
+  const selectedNight = nights.find((night) => night.id === viewing);
   const today = DateTime.now().setZone(TIMEZONE).startOf("day").toMillis();
   const upcoming = nights.filter((n) => Date.parse(n.starts_at) >= today);
   const past = nights.filter((n) => Date.parse(n.starts_at) < today).reverse();
@@ -58,6 +61,12 @@ export function SchedulePanel() {
           const date = DateTime.fromISO(night.starts_at, { zone: TIMEZONE });
           return (
             <article className="schedule-entry" key={night.id}>
+              <button
+                type="button"
+                className="schedule-entry-open"
+                aria-label={`View ${night.title}`}
+                onClick={() => setViewing(night.id)}
+              />
               <div className="schedule-date-block">
                 <span>{date.toFormat("LLL")}</span>
                 <strong>{date.day}</strong>
@@ -111,14 +120,54 @@ export function SchedulePanel() {
           </button>
         )}
       </div>
-      <div className="schedule-footer">
-        <span className="small-star">✦</span>
-        <p>
-          Same time. Different sofas.
-          <br />
-          Great company.
-        </p>
-      </div>
+      <Dialog
+        open={Boolean(selectedNight)}
+        onOpenChange={(open) => {
+          if (!open) setViewing(null);
+        }}
+        title={selectedNight?.title ?? "Schedule Entry"}
+      >
+        {selectedNight && (
+          <div className="schedule-details">
+            <p>
+              <CalendarDays size={18} />
+              {DateTime.fromISO(selectedNight.starts_at, { zone: TIMEZONE }).toFormat(
+                "cccc, LLLL d, yyyy",
+              )}
+            </p>
+            <p>
+              <Clock3 size={18} />
+              {formatNight(selectedNight.starts_at).time}{" "}
+              <span className="muted">({TIMEZONE})</span>
+            </p>
+            <h3>Hosts</h3>
+            <p>
+              {profiles
+                .filter((profile) =>
+                  selectedNight.movie_night_hosts.some((host) => host.user_id === profile.id),
+                )
+                .map((profile) => profile.display_name)
+                .join(" / ") || "TBD"}
+            </p>
+            <h3>Movies</h3>
+            {selectedNight.movie_night_movies.length ? (
+              <ul className="schedule-details-movies">
+                {selectedNight.movie_night_movies.map((movie) => (
+                  <li key={movie.id}>
+                    <Poster url={movie.movie_poster_snapshot} title={movie.movie_title_snapshot} />
+                    <div>
+                      <strong>{movie.movie_title_snapshot}</strong>
+                      <p className="muted">{movie.movie_year_snapshot ?? "Year unknown"}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>TBD</p>
+            )}
+          </div>
+        )}
+      </Dialog>
       <Dialog
         open={editing !== null}
         onOpenChange={(open) => {

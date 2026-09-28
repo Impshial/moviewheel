@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Upload, Check } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
-import { Avatar, StoredImage } from "@/components/ui/media";
+import { StoredImage } from "@/components/ui/media";
+import { ProfileHoverCard } from "@/features/chat/profile-hover-card";
 import { useWorkspace } from "@/features/workspace/provider";
 import { useUploads } from "@/features/chat/use-uploads";
 import { PinInput } from "@/features/auth/login";
@@ -18,13 +19,13 @@ export function AccountSettings({
   onOpenChange: (open: boolean) => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title="Account Settings">
+    <Dialog open={open} onOpenChange={onOpenChange} title="Account Settings" wide>
       {open && <SettingsForm />}
     </Dialog>
   );
 }
 function SettingsForm() {
-  const { me, supabase, refresh, notice } = useWorkspace();
+  const { me, online, supabase, refresh, notice } = useWorkspace();
   const [color, setColor] = useState(me.chat_name_color);
   const [sort, setSort] = useState(me.preferred_movie_sort);
   const [options, setOptions] = useState<AvatarOption[]>([]);
@@ -112,7 +113,7 @@ function SettingsForm() {
       <section>
         <h3>Your avatar</h3>
         <div className="avatar-settings">
-          <Avatar profile={me} />
+          <ProfileHoverCard profile={me} online={online.has(me.id)} small={false} />
           <div>
             <strong>{me.display_name}</strong>
             <p className="field-hint">Your face in the conversation.</p>

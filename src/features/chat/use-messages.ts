@@ -21,9 +21,21 @@ export function useMessages() {
   const [hasOlder, setHasOlder] = useState(false);
   const inProgress = useRef<Promise<void> | null>(null);
   const active = useRef(true);
+  const deletedIds = useRef(new Set<string>());
+  const discard = useCallback((ids: string[]) => {
+    if (!active.current || !ids.length) return;
+    ids.forEach((id) => deletedIds.current.add(id));
+    current.current = current.current.filter((message) => !deletedIds.current.has(message.id));
+    setMessages(current.current);
+  }, []);
   const merge = useCallback((incoming: ChatMessage[]) => {
     if (!active.current) return;
-    current.current = mergeMessages(current.current, incoming);
+    incoming.forEach((message) => {
+      if (message.deleted_at) deletedIds.current.add(message.id);
+    });
+    current.current = mergeMessages(current.current, incoming).filter(
+      (message) => !deletedIds.current.has(message.id),
+    );
     setMessages(current.current);
   }, []);
   const refresh = useCallback(async () => {
@@ -31,12 +43,23 @@ export function useMessages() {
     const work = async () => {
       try {
         const latest = current.current.at(-1);
+        // Reconcile deletions in loaded history, including ones missed while disconnected.
+        const ids = current.current.map((message) => message.id);
+        for (let i = 0; i < ids.length; i += 100) {
+          const { data, error } = await supabase
+            .from("chat_messages")
+            .select("id,deleted_at")
+            .in("id", ids.slice(i, i + 100));
+          if (error) throw error;
+          discard(data.filter((message) => message.deleted_at).map((message) => message.id));
+        }
         // Reconcile the newest page even when a transaction commits out of
         // timestamp order. Realtime IDs below cover older late commits too.
         {
           const { data, error } = await supabase
             .from("chat_messages")
             .select(fields)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false })
             .order("id", { ascending: false })
             .limit(100);
@@ -45,7 +68,9 @@ export function useMessages() {
           merge(data as ChatMessage[]);
         }
         const loaded = new Set(current.current.map((message) => message.id));
-        const missing = chatInsertIds.filter((id) => !loaded.has(id));
+        const missing = chatInsertIds.filter(
+          (id) => !loaded.has(id) && !deletedIds.current.has(id),
+        );
         for (let i = 0; i < missing.length; i += 100) {
           const { data, error } = await supabase
             .from("chat_messages")
@@ -61,6 +86,7 @@ export function useMessages() {
             const { data, error } = await supabase
               .from("chat_messages")
               .select(fields)
+              .is("deleted_at", null)
               .or(
                 `created_at.gt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.gt.${cursor.id})`,
               )
@@ -83,7 +109,7 @@ export function useMessages() {
     inProgress.current = work();
     await inProgress.current;
     inProgress.current = null;
-  }, [supabase, notice, merge, chatInsertIds]);
+  }, [supabase, notice, merge, discard, chatInsertIds]);
   useEffect(() => {
     active.current = true;
     void refresh();
@@ -99,6 +125,7 @@ export function useMessages() {
       const { data, error } = await supabase
         .from("chat_messages")
         .select(fields)
+        .is("deleted_at", null)
         .or(
           `created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`,
         )
@@ -114,5 +141,5 @@ export function useMessages() {
       setLoadingOlder(false);
     }
   }, [supabase, notice, merge, loadingOlder, hasOlder]);
-  return { messages, loading, loadingOlder, hasOlder, older, refresh };
+  return { messages, loading, loadingOlder, hasOlder, older, refresh, discard };
 }
