@@ -209,7 +209,7 @@ const server = createServer(async (req, res) => {
         ].entries()) {
           const id = randomUUID();
           await db.query(
-            "insert into public.movies(id,imdb_id,title,release_year,poster_url,director,plot,added_by_user_id,rated,runtime_minutes,imdb_rating) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+            "insert into public.movies(id,imdb_id,title,release_year,poster_url,director,plot,added_by_user_id,rated,runtime_minutes,imdb_rating,created_at) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
             [
               id,
               `tt${String(1000000 + i)}`,
@@ -222,6 +222,7 @@ const server = createServer(async (req, res) => {
               i === 0 ? "R" : null,
               i === 0 ? 117 : null,
               i === 0 ? "8.5" : null,
+              `2026-09-${20 + i}T12:00:00Z`,
             ],
           );
           for (let voter = 0; voter < (i < 4 ? 3 : 1); voter++)

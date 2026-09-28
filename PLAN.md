@@ -30,7 +30,7 @@ This plan supplements [the master specification](docs/master-specification.md). 
 ## Movies, OMDb and schedule
 
 - The homepage contains every movie in Cards, Card List, or single-line List view, fetching beyond API page limits. Persist the selected view per member. Every view retains voting and movie details, with Delete shown only for movies added by the current member. Include Add a Movie beside Sort and view icons below it; omit the collection captions.
-- Persist seven sorting modes: Most Votes, Least Votes, A-Z, Z-A, By Year Oldest, By Year Newest, My Votes. Vote counts and personal-vote groups use alphabetical ties; unknown years sort last in both directions.
+- Persist eight sorting modes: Most Votes, Least Votes, A-Z, Z-A, By Year Oldest, By Year Newest, My Votes, Recently Added. Recently Added uses the original added timestamp, newest first, with alphabetical ties. Vote counts and personal-vote groups use alphabetical ties; unknown years sort last in both directions.
 - Debounce OMDb search, cancel stale results, paginate and request only movie results. Cache search/detail enrichment in Supabase and save normalized metadata. Respect the configured free-key daily allowance. Missing director/poster information uses a fallback and does not block valid movies.
 - `add_movie` serializes by IMDb ID and atomically creates a new movie plus the adding member's vote. Return distinct visible outcomes: new movie added; existing movie and vote added; existing movie and already voted. Unique constraints prevent duplicates under concurrency.
 - Each member may vote for multiple movies, once per movie, and remove only their own vote. Deleting a movie cascades votes and preserves schedule snapshots.
@@ -61,7 +61,7 @@ This plan supplements [the master specification](docs/master-specification.md). 
 
 - First claim, configured login, incorrect PIN, leading zeroes, numeric validation, refresh, logout/current-session behavior and Change PIN; simultaneous claims leave exactly one successful account/password.
 - Only the original adding member can delete a movie, including after another member adds the same IMDb ID. Other members cannot delete it through the UI or direct database requests, or forge ownership. Owner deletion removes votes and preserves schedule snapshots. Any member can still edit another member's schedule; cross-member votes/settings/PIN changes fail. Unrelated authenticated accounts cannot access shared content.
-- Concurrent duplicate movie additions yield one movie and exactly the expected votes and notification for each request. Verify all seven sorts and persisted preferences.
+- Concurrent duplicate movie additions yield one movie and exactly the expected votes and notification for each request. Verify all eight sorts and persisted preferences, including Recently Added after refresh.
 - More than four images and an image larger than 5 MB succeed when the provider limits allow; unsupported formats/provider oversize produce clear errors. Verify paste, image-only/mixed messages, failed upload, safe retry after ambiguous finalization, refreshed old media URLs and new-device reads.
 - Multiple-tab presence, disconnect/typing cleanup, current avatar/color in older messages, pagination/scroll behavior and uninterrupted chat state across wheel navigation.
 - At least two votes controls eligibility, including a drop to one; one entry per movie and equal probability; selected movie matches final pointer; zero spin-related database writes.

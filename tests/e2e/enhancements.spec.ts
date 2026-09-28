@@ -140,7 +140,7 @@ test("only the adding member sees Delete in every movie view and can remove it",
   await expect(page.locator(".movie-card")).toHaveCount(5);
 });
 
-test("seven sorts persist, account settings are wider, and the nearby add button opens search", async ({
+test("eight sorts persist, account settings are wider, and the nearby add button opens search", async ({
   page,
 }) => {
   await login(page);
@@ -153,20 +153,29 @@ test("seven sorts persist, account settings are wider, and the nearby add button
     "By Year Oldest",
     "By Year Newest",
     "My Votes",
+    "Recently Added",
   ]);
-  for (const mode of ["least-votes", "reverse-alphabetical", "year-ascending"]) {
+  for (const mode of ["least-votes", "reverse-alphabetical", "year-ascending", "recently-added"]) {
     await sort.selectOption(mode);
     await expect(sort).toHaveValue(mode);
     await page.reload();
     await expect(sort).toHaveValue(mode);
   }
+  await expect(page.locator(".movie-card h2")).toHaveText([
+    "Blade Runner",
+    "Before Sunrise",
+    "The Thing",
+    "The Grand Budapest Hotel",
+    "Arrival",
+    "Alien",
+  ]);
   await page.locator(".collection-actions").getByRole("button", { name: "Add a Movie" }).click();
   await expect(page.getByLabel("Enter Movie Title")).toBeVisible();
   await page.getByRole("button", { name: "Close dialog" }).click();
   await page.getByRole("button", { name: "Paul's menu" }).click();
   await page.getByRole("menuitem", { name: "Account Settings" }).click();
   await expect(page.getByRole("dialog")).toHaveCSS("width", "740px");
-  await expect(page.getByLabel("Preferred movie sorting")).toHaveValue("year-ascending");
+  await expect(page.getByLabel("Preferred movie sorting")).toHaveValue("recently-added");
   await page.locator(".avatar-settings .chat-profile-trigger").hover();
   await expect(page.locator(".profile-hover-card-large")).toContainText("Paul");
   await expect(page.locator(".profile-hover-card-large .avatar")).toHaveCSS("width", "96px");

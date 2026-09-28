@@ -15,6 +15,8 @@ export function sortMovies(movies: Movie[], mode: SortMode, memberId: string): M
   return [...movies].sort((a, b) => {
     if (mode === "alphabetical") return title(a, b);
     if (mode === "reverse-alphabetical") return title(b, a);
+    if (mode === "recently-added")
+      return Date.parse(b.created_at) - Date.parse(a.created_at) || title(a, b);
     if (mode === "year" || mode === "year-ascending") {
       if (a.release_year === null) return b.release_year === null ? title(a, b) : 1;
       if (b.release_year === null) return -1;

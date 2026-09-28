@@ -8,6 +8,7 @@ export const SORTS = {
   "year-ascending": "By Year Oldest",
   year: "By Year Newest",
   "my-votes": "My Votes",
+  "recently-added": "Recently Added",
 } as const;
 export type SortMode = keyof typeof SORTS;
 export const MOVIE_VIEWS = { cards: "Cards", "card-list": "Card List", list: "List" } as const;

@@ -4,7 +4,7 @@
 
 > Approved update (September 28, 2026): movies qualify for the wheel with **two or more votes** and become ineligible below two. This supersedes the original three-vote threshold in the specification preserved below.
 
-> Further approved updates: seven sort options and three saved movie views; sender-only chat deletion; clickable chat URLs; avatar profile cards in chat and Account Settings; wider settings and schedule details popups; a disabled empty wheel; and the requested header/caption removals. Current behavior is detailed in PLAN.md. These changes supersede conflicting details in the original specification below.
+> Further approved updates: eight sort options including Recently Added (newest additions first) and three saved movie views; sender-only chat deletion; clickable chat URLs; avatar profile cards in chat and Account Settings; wider settings and schedule details popups; a disabled empty wheel; and the requested header/caption removals. Current behavior is detailed in PLAN.md. These changes supersede conflicting details in the original specification below.
 
 Build a polished multi-user web application called **Movie Wheel**.
 

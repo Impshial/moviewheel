@@ -81,6 +81,21 @@ describe("collection rules", () => {
       )[0].id,
     ).toBe("b");
   });
+  it("sorts recently added by timestamp newest first, with alphabetical ties", () => {
+    const added = [
+      { ...movie("old", "Alpha", ["b"], 2026), created_at: "2026-09-20T12:00:00Z" },
+      { ...movie("new", "Zulu", [], 1979), created_at: "2026-09-28T12:00:00Z" },
+      { ...movie("tie-b", "Bravo", []), created_at: "2026-09-27T12:00:00Z" },
+      { ...movie("tie-a", "Alpha", []), created_at: "2026-09-27T08:00:00-04:00" },
+    ];
+    expect(sortMovies(added, "recently-added", "b").map((m) => m.id)).toEqual([
+      "new",
+      "tie-a",
+      "tie-b",
+      "old",
+    ]);
+    expect(added.map((m) => m.id)).toEqual(["old", "new", "tie-b", "tie-a"]);
+  });
   it.each([0, 1, 2, 3, 4, 5])("qualifies with two or more votes (%i)", (count) =>
     expect(
       isEligible(
