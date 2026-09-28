@@ -153,13 +153,17 @@ export function MovieCollection() {
             return (
               <article className="movie-card" key={movie.id}>
                 <div className="poster-wrap">
-                  <button
-                    className="poster-button"
-                    onClick={() => setSelected(movie)}
-                    aria-label={`View ${movie.title}`}
-                  >
+                  {view === "card-list" ? (
                     <Poster url={movie.poster_url} title={movie.title} />
-                  </button>
+                  ) : (
+                    <button
+                      className="poster-button"
+                      onClick={() => setSelected(movie)}
+                      aria-label={`View ${movie.title}`}
+                    >
+                      <Poster url={movie.poster_url} title={movie.title} />
+                    </button>
+                  )}
                   <button
                     className="delete-movie icon-button"
                     aria-label={`Delete ${movie.title}`}
@@ -177,21 +181,54 @@ export function MovieCollection() {
                 <button
                   className="movie-title-button"
                   title={movie.title}
+                  aria-label={view === "card-list" ? `View ${movie.title}` : undefined}
                   onClick={() => setSelected(movie)}
                 >
                   <h2>{movie.title}</h2>
                 </button>
-                <p className="movie-meta">
-                  {movie.release_year ?? "Year unknown"}
-                  {view !== "list" && (
-                    <>
-                      <span>·</span>
-                      {profiles.find((p) => p.id === movie.added_by_user_id)?.display_name ??
-                        "Member"}
-                      &apos;s pick
-                    </>
-                  )}
-                </p>
+                {view === "card-list" ? (
+                  <>
+                    <dl className="movie-card-facts">
+                      <div>
+                        <dt>Year</dt>
+                        <dd>{movie.release_year ?? "Unknown"}</dd>
+                      </div>
+                      <div>
+                        <dt>Rating</dt>
+                        <dd>{movie.rated ?? "Not available"}</dd>
+                      </div>
+                      <div>
+                        <dt>Director</dt>
+                        <dd>{movie.director ?? "Not available"}</dd>
+                      </div>
+                      <div>
+                        <dt>Runtime</dt>
+                        <dd>
+                          {movie.runtime_minutes ? `${movie.runtime_minutes} min` : "Not available"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>IMDb rating</dt>
+                        <dd>{movie.imdb_rating ? `${movie.imdb_rating}/10` : "Not available"}</dd>
+                      </div>
+                    </dl>
+                    <p className="movie-card-description">
+                      {movie.plot ?? "No description available."}
+                    </p>
+                  </>
+                ) : (
+                  <p className="movie-meta">
+                    {movie.release_year ?? "Year unknown"}
+                    {view !== "list" && (
+                      <>
+                        <span>·</span>
+                        {profiles.find((p) => p.id === movie.added_by_user_id)?.display_name ??
+                          "Member"}
+                        &apos;s pick
+                      </>
+                    )}
+                  </p>
+                )}
                 <div className="movie-voting">
                   <button
                     className={`vote-button ${voted ? "voted" : ""}`}

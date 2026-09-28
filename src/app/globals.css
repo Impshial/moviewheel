@@ -965,9 +965,11 @@ legend {
   gap: 14px;
 }
 .movie-card-list .movie-card {
+  position: relative;
+  isolation: isolate;
   display: grid;
-  grid-template-columns: 85px minmax(0, 1fr);
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: 110px minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr auto auto;
   column-gap: 17px;
   padding: 14px;
   background: #181d27;
@@ -976,7 +978,7 @@ legend {
 }
 .movie-card-list .poster-wrap {
   grid-column: 1;
-  grid-row: 1 / 5;
+  grid-row: 1 / 6;
   align-self: start;
 }
 .movie-card-list .movie-title-button {
@@ -987,23 +989,83 @@ legend {
 .movie-card-list .movie-title-button h2 {
   font-size: 16px;
 }
-.movie-card-list .movie-meta {
+.movie-card-list .movie-title-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 10px;
+}
+.movie-card-list .movie-title-button:focus-visible {
+  outline: none;
+}
+.movie-card-list .movie-title-button:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.movie-card-list .movie-card:has(.movie-title-button:hover) {
+  border-color: #785246;
+}
+.movie-card-list .vote-button {
+  position: relative;
+  z-index: 2;
+}
+.movie-card-list .delete-movie {
+  z-index: 2;
+}
+.movie-card-list .movie-card:hover .delete-movie,
+.movie-card-list .movie-card:focus-within .delete-movie {
+  opacity: 1;
+}
+.movie-card-facts {
   grid-column: 2;
   grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.movie-card-facts > div {
+  display: flex;
+  gap: 5px;
+  min-width: 0;
+}
+.movie-card-facts dt {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.movie-card-facts dd {
+  margin: 0;
+  color: #d7dae1;
+  overflow-wrap: anywhere;
+}
+.movie-card-description {
+  grid-column: 2;
+  grid-row: 3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  align-self: start;
+  margin-top: 9px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a2a7b4;
 }
 .movie-card-list .movie-voting {
   grid-column: 2;
-  grid-row: 3;
+  grid-row: 4;
   justify-content: flex-start;
   align-self: end;
   gap: 12px;
 }
 .movie-card-list .eligibility {
   grid-column: 2;
-  grid-row: 4;
+  grid-row: 5;
 }
 .movie-card-list .poster-fallback {
-  height: 128px;
   padding: 8px;
 }
 .movie-card-list .poster-fallback span {
@@ -2299,6 +2361,17 @@ legend {
   }
   .movie-voting {
     font-size: 10px;
+  }
+  .movie-card-list .movie-card {
+    grid-template-columns: 76px minmax(0, 1fr);
+    column-gap: 12px;
+    padding: 12px;
+  }
+  .movie-card-list .movie-title-button h2 {
+    font-size: 15px;
+  }
+  .movie-card-description {
+    display: none;
   }
   .vote-button {
     padding: 6px 8px;

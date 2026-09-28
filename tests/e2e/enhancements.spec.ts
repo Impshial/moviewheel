@@ -22,7 +22,59 @@ test("all three movie views retain voting and details and remember the choice", 
   );
   await controls.getByRole("button", { name: "Card List", exact: true }).click();
   await expect(page.locator(".movie-card-list .movie-card")).toHaveCount(6);
+  const card = page
+    .locator(".movie-card-list .movie-card")
+    .filter({ has: page.getByRole("heading", { name: "Alien", exact: true }) });
+  await expect(card.locator(".movie-card-facts dd")).toHaveText([
+    "1979",
+    "R",
+    "Director name",
+    "117 min",
+    "8.5/10",
+  ]);
+  await expect(card.locator(".movie-card-description")).toBeVisible();
+  await expect(card.locator(".movie-card-description")).toHaveCSS("-webkit-line-clamp", "2");
+  const missingMetadata = page
+    .locator(".movie-card-list .movie-card")
+    .filter({ has: page.getByRole("heading", { name: "Arrival", exact: true }) });
+  await expect(missingMetadata.locator(".movie-card-facts dd")).toHaveText([
+    "1986",
+    "Not available",
+    "Director name",
+    "Not available",
+    "Not available",
+  ]);
   await page.screenshot({ path: "artifacts/movies-card-list.png", fullPage: true });
+  // The padding and description areas open details, not just the poster or title.
+  await card.click({ position: { x: 6, y: 6 } });
+  await expect(page.getByRole("dialog")).toContainText("Movie Details");
+  await expect(page.getByRole("dialog")).toContainText("Alien");
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  const description = await card.locator(".movie-card-description").boundingBox();
+  await page.mouse.click(description!.x + 5, description!.y + 5);
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await card.getByRole("button", { name: "View Alien", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await card.locator(".vote-button").click();
+  await expect(card.locator(".vote-button")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await card.getByRole("button", { name: "Delete Alien", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Remove Movie?");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(card.locator(".movie-card-description")).toBeHidden();
+  await expect(card.locator(".movie-card-facts")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({ path: "artifacts/movies-card-list-mobile.png", fullPage: true });
+  await card.click({ position: { x: 6, y: 6 } });
+  await expect(page.getByRole("dialog")).toContainText("Alien");
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await controls.getByRole("button", { name: "List", exact: true }).click();
   await expect(page.locator(".movie-list .movie-card")).toHaveCount(6);
   await page.reload();
