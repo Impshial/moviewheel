@@ -116,7 +116,7 @@ function SearchForm({ onClose }: { onClose: () => void }) {
               <Search size={19} />
               <input
                 autoFocus
-                placeholder="Find something worth watching…"
+                placeholder="Search by movie title…"
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
@@ -129,12 +129,8 @@ function SearchForm({ onClose }: { onClose: () => void }) {
           {!query.trim() && (
             <div className="search-intro">
               <FilmMark />
-              <h3>
-                The next great movie night
-                <br />
-                starts with a good pick.
-              </h3>
-              <p>Search for a film. Add it to the list. Your vote comes with it.</p>
+              <h3>Search for a movie</h3>
+              <p>Search by title, then select a movie to add. Your vote is added automatically.</p>
             </div>
           )}
           {query.trim() && (loading || (!currentResult && !error)) && (
