@@ -6,7 +6,7 @@ import { Poster } from "@/components/ui/media";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { MovieDetails } from "./details";
 import { SORTS, type Movie, type SortMode } from "@/lib/types";
-import { errorMessage, isEligible, sortMovies, votedFor } from "@/lib/domain";
+import { errorMessage, isEligible, sortMovies, votedFor, WHEEL_MIN_VOTES } from "@/lib/domain";
 
 export function MovieCollection() {
   const { movies, me, profiles, loading, supabase, refresh, notice, openAddMovie } = useWorkspace();
@@ -100,7 +100,7 @@ export function MovieCollection() {
           <p>
             Add your first movie to get things rolling.
             <br />
-            Three votes puts it on the wheel.
+            {WHEEL_MIN_VOTES} votes put it on the wheel.
           </p>
           <button className="button primary" onClick={openAddMovie}>
             <Plus size={18} />
@@ -162,7 +162,7 @@ export function MovieCollection() {
                 <p className={`eligibility ${isEligible(movie) ? "eligible" : ""}`}>
                   {isEligible(movie)
                     ? "On Wheel"
-                    : count === 2
+                    : count === WHEEL_MIN_VOTES - 1
                       ? "Needs 1 more vote"
                       : "Not on Wheel"}
                 </p>

@@ -39,7 +39,7 @@ This plan supplements [the master specification](docs/master-specification.md). 
 ## Wheel and shared navigation
 
 - `/wheel` occupies the central page within the persistent layout, with schedule left and chat right. Navigation preserves the chat text, selected/uploading images, scroll position and subscriptions. Mobile panels stay mounted.
-- Show one equal-size colorful segment per movie with at least three votes, a pale rim, radial labels, fixed pointer and center Spin control. Votes never weight the probability.
+- Show one equal-size colorful segment per movie with at least two votes, a pale rim, radial labels, fixed pointer and center Spin control. Votes never weight the probability.
 - Capture eligibility at spin start; select with unbiased browser randomness and animate to the exact corresponding segment. Finish against the snapshot, then apply subsequent collection changes. Support zero/one eligible movie and reduced motion.
 - Spins create no database/history records, notifications, synchronized animation, scheduling, deletion or watched-state changes. Display the local selected movie with no post-spin actions.
 
@@ -60,7 +60,7 @@ This plan supplements [the master specification](docs/master-specification.md). 
 - Concurrent duplicate movie additions yield one movie and exactly the expected votes and notification for each request. Verify all four sorts and persisted preferences.
 - More than four images and an image larger than 5 MB succeed when the provider limits allow; unsupported formats/provider oversize produce clear errors. Verify paste, image-only/mixed messages, failed upload, safe retry after ambiguous finalization, refreshed old media URLs and new-device reads.
 - Multiple-tab presence, disconnect/typing cleanup, current avatar/color in older messages, pagination/scroll behavior and uninterrupted chat state across wheel navigation.
-- At least three votes controls eligibility, including a drop to two; one entry per movie and equal probability; selected movie matches final pointer; zero spin-related database writes.
+- At least two votes controls eligibility, including a drop to one; one entry per movie and equal probability; selected movie matches final pointer; zero spin-related database writes.
 - Run lint, typecheck, meaningful unit/PostgreSQL/browser tests and production build; inspect desktop/mobile views. Distinguish isolated fixture tests from hosted Supabase/OMDb integration checks.
 
 ## Configuration still required before live verification

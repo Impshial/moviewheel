@@ -2,10 +2,11 @@ import { DateTime } from "luxon";
 import type { AddMovieOutcome, Movie, MovieMetadata, SortMode } from "./types";
 
 export const TIMEZONE = "America/New_York";
+export const WHEEL_MIN_VOTES = 2;
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
 export const isPin = (value: unknown): value is string =>
   typeof value === "string" && /^\d{6}$/.test(value);
-export const isEligible = (movie: Movie) => movie.movie_votes.length >= 3;
+export const isEligible = (movie: Movie) => movie.movie_votes.length >= WHEEL_MIN_VOTES;
 export const votedFor = (movie: Movie, memberId: string) =>
   movie.movie_votes.some((v) => v.user_id === memberId);
 

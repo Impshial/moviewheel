@@ -1,5 +1,7 @@
 # MOVIE WHEEL
 
+> Approved update (September 28, 2026): movies qualify for the wheel with **two or more votes** and become ineligible below two. This supersedes the original three-vote threshold in the specification preserved below.
+
 Build a polished multi-user web application called **Movie Wheel**.
 
 This application is for exactly five people who use it from different physical locations.

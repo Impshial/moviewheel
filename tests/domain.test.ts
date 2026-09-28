@@ -75,7 +75,7 @@ describe("collection rules", () => {
       )[0].id,
     ).toBe("b");
   });
-  it.each([0, 1, 2, 3, 4, 5])("qualifies exactly at three votes (%i)", (count) =>
+  it.each([0, 1, 2, 3, 4, 5])("qualifies with two or more votes (%i)", (count) =>
     expect(
       isEligible(
         movie(
@@ -84,7 +84,7 @@ describe("collection rules", () => {
           Array.from({ length: count }, (_, i) => String(i)),
         ),
       ),
-    ).toBe(count >= 3),
+    ).toBe(count >= 2),
   );
   it("keeps duplicate notifications distinct", () => {
     expect(addMovieNotice("Alien", "added")).toContain("automatically");

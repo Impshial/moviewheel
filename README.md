@@ -52,7 +52,7 @@ RLS recognizes only identities bound to the five profiles. All members can manag
 - Chat stays mounted above `/` and `/wheel`, preserving its composer, uploads, and scroll position during navigation.
 - On desktop, drag chat's left divider to resize it. The focused divider also supports Left/Right arrow keys; double-click resets its width. The layout keeps the movie column usable as the window shrinks. The selected width stays through movie/wheel navigation; mobile uses the full-width Chat panel.
 - All movie-night times are America/New_York. Skipped spring-forward times are rejected. Repeated fall-back times consistently choose the earlier occurrence and display the resulting Eastern abbreviation.
-- Wheel entries have at least three votes, appear once each, and have equal chances through rejection-sampled browser randomness. Spins hold a snapshot, generate no records or broadcasts, and offer no post-spin actions.
+- Wheel entries have at least two votes, appear once each, and have equal chances through rejection-sampled browser randomness. Spins hold a snapshot, generate no records or broadcasts, and offer no post-spin actions.
 
 ## Upload behavior and maintenance
 

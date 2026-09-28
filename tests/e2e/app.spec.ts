@@ -124,7 +124,10 @@ test("concurrent movie additions show distinct outcomes, and live votes cross th
       .locator(".movie-card")
       .filter({ has: hannah.getByRole("heading", { name: "Moon", exact: true }) });
     await expect(moon).toContainText("2 votes");
-    await expect(moon).toContainText("Needs 1 more vote");
+    await expect(moon.locator(".eligibility")).toHaveText("On Wheel");
+    await abby.getByRole("link", { name: "Spin the Wheel" }).click();
+    const moonOnWheel = abby.locator(".wheel-entries li").filter({ hasText: /^Moon$/ });
+    await expect(moonOnWheel).toHaveCount(1);
     await moon.getByRole("button", { name: "Vote", exact: true }).click();
     await expect(moon).toContainText("3 votes");
     await expect(moon.locator(".eligibility")).toHaveText("On Wheel");
@@ -132,7 +135,21 @@ test("concurrent movie additions show distinct outcomes, and live votes cross th
     await paul.getByRole("button", { name: "Add to Movie List" }).click();
     await expect(paul.locator(".toast")).toContainText("you've already voted for it");
     await moon.getByRole("button", { name: "Voted", exact: true }).click();
+    await expect(moon).toContainText("2 votes");
+    await expect(moon.locator(".eligibility")).toHaveText("On Wheel");
+    await expect(moonOnWheel).toHaveCount(1);
+    await paul
+      .locator(".movie-card")
+      .filter({ has: paul.getByRole("heading", { name: "Moon", exact: true }) })
+      .getByRole("button", { name: "Voted", exact: true })
+      .click();
+    await expect(moon).toContainText("1 vote");
     await expect(moon).toContainText("Needs 1 more vote");
+    await expect(moonOnWheel).toHaveCount(0);
+    await moon.getByRole("button", { name: "Vote", exact: true }).click();
+    await expect(moon).toContainText("2 votes");
+    await expect(moon.locator(".eligibility")).toHaveText("On Wheel");
+    await expect(moonOnWheel).toHaveCount(1);
     await paul.getByRole("button", { name: "Delete Moon", exact: true }).click();
     await paul.getByRole("dialog").getByRole("button", { name: "Delete", exact: true }).click();
     await expect(moon).toHaveCount(0);

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { useWorkspace } from "@/features/workspace/provider";
-import { isEligible, randomIndex, targetRotation } from "@/lib/domain";
+import { isEligible, randomIndex, targetRotation, WHEEL_MIN_VOTES } from "@/lib/domain";
 import type { Movie } from "@/lib/types";
 
 const COLORS = [
@@ -75,7 +75,7 @@ export function MovieWheel() {
         <div className="wheel-empty">
           <Sparkles size={44} />
           <h2>No movies have enough votes yet.</h2>
-          <p>A movie needs at least 3 votes to appear on the wheel.</p>
+          <p>A movie needs at least {WHEEL_MIN_VOTES} votes to appear on the wheel.</p>
         </div>
       ) : (
         <>
