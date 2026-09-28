@@ -223,7 +223,30 @@ describe("actual PostgreSQL migration and atomic rules", () => {
       member(1, "delete from public.movie_votes where user_id=$1", [memberIds[0]]),
     ).rejects.toThrow("permission denied");
   });
-  it("allows another member to edit the schedule and delete a movie while retaining snapshots", async () => {
+  it("allows only the original adder to delete a movie, including after duplicate additions", async () => {
+    const movie = await add(0);
+    expect((await add(1)).outcome).toBe("existing_vote_added");
+    for (const other of [1, 2, 3, 4, 8]) {
+      expect(
+        await member(other, "delete from public.movies where id=$1 returning id", [movie.movie_id]),
+      ).toEqual([]);
+    }
+    expect((await db.query("select added_by_user_id from public.movies")).rows).toEqual([
+      { added_by_user_id: memberIds[0] },
+    ]);
+    expect((await db.query("select * from public.movie_votes")).rows).toHaveLength(2);
+    await expect(
+      member(1, "update public.movies set added_by_user_id=$1 where id=$2", [
+        memberIds[1],
+        movie.movie_id,
+      ]),
+    ).rejects.toThrow("permission denied");
+    expect(
+      await member(0, "delete from public.movies where id=$1 returning id", [movie.movie_id]),
+    ).toEqual([{ id: movie.movie_id }]);
+    expect((await db.query("select * from public.movie_votes")).rows).toHaveLength(0);
+  });
+  it("allows shared schedule editing and preserves snapshots after the movie owner deletes", async () => {
     const movie = await add();
     const [{ id }] = await member<{ id: string }>(
       0,
@@ -235,7 +258,7 @@ describe("actual PostgreSQL migration and atomic rules", () => {
       "select public.save_movie_night($1,'Updated night','2026-10-06T23:30:00Z',$2,$3)",
       [id, [memberIds[2]], [movie.movie_id]],
     );
-    await member(2, "delete from public.movies where id=$1", [movie.movie_id]);
+    await member(0, "delete from public.movies where id=$1", [movie.movie_id]);
     const snapshots = (await member(0, "select * from public.movie_night_movies")).map((r) => r);
     expect(snapshots[0]).toMatchObject({
       movie_id: null,

@@ -150,8 +150,12 @@ test("concurrent movie additions show distinct outcomes, and live votes cross th
     await expect(moon).toContainText("2 votes");
     await expect(moon.locator(".eligibility")).toHaveText("On Wheel");
     await expect(moonOnWheel).toHaveCount(1);
-    await paul.getByRole("button", { name: "Delete Moon", exact: true }).click();
-    await paul.getByRole("dialog").getByRole("button", { name: "Delete", exact: true }).click();
+    const owner = notices[0].includes("was added to the movie list.") ? abby : paul;
+    const other = owner === abby ? paul : abby;
+    await abby.getByRole("link", { name: "Movies to Watch", exact: true }).click();
+    await expect(other.getByRole("button", { name: "Delete Moon", exact: true })).toHaveCount(0);
+    await owner.getByRole("button", { name: "Delete Moon", exact: true }).click();
+    await owner.getByRole("dialog").getByRole("button", { name: "Delete", exact: true }).click();
     await expect(moon).toHaveCount(0);
   } finally {
     await Promise.all(contexts.map((c) => c.close()));

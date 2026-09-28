@@ -459,9 +459,14 @@ const server = createServer(async (req, res) => {
       }
       const clause = where.length ? ` where ${where.join(" and ")}` : "";
       if (req.method === "DELETE") {
-        await run(user, `delete from public.${table} t${clause}`, params, admin);
-        respond(null);
-        changed(table, "DELETE");
+        const deleted = await run(
+          user,
+          `delete from public.${table} t${clause} returning id`,
+          params,
+          admin,
+        );
+        respond(req.headers.prefer?.includes("return=representation") ? deleted : null);
+        if (deleted.length) changed(table, "DELETE");
         return;
       }
       let fields = "t.*";

@@ -21,7 +21,7 @@ This plan supplements [the master specification](docs/master-specification.md). 
 ## Schema, permissions and durable media
 
 - Seed exactly five profiles with distinct readable chat colors. Store profiles/settings, avatar options, movies, unique `(movie_id,user_id)` votes, movie nights/hosts/movie snapshots, chat messages/attachments and upload staging records in PostgreSQL.
-- RLS recognizes only Auth identities bound to those five members. All members may add/delete any movie and add/edit/delete any schedule entry, regardless of creator. Only owners may change their votes, PIN, avatar, color and preferences. Authors/owners derive from `auth.uid()`, never a client-selected identity.
+- RLS recognizes only Auth identities bound to those five members. All members may add movies; only the original adding member may delete a movie. Adding an existing movie does not transfer ownership. All members may add/edit/delete any schedule entry, regardless of creator. Only owners may change their votes, PIN, avatar, color and preferences. Authors/owners derive from `auth.uid()`, never a client-selected identity.
 - Use private `chat-images`, `avatars` and `avatar-presets` Storage buckets. All five members may view shared images/avatars; only the authenticated owner may upload to their registered object path. Preset files can be supplied later, with initials until then.
 - Store permanent bucket/path and MIME/size/dimension metadata, never just a signed/blob URL. Renew viewing URLs on later sessions and expiry. Replace avatars using new object names so connected clients avoid stale cached files. Current profiles determine appearance in historical messages.
 - Save movie metadata and OMDb poster URLs. **Posters remain externally hosted; they are not archived in Storage.** Upstream poster loss is a real limitation, handled with a fallback. Schedule snapshots preserve understandable movie title/year/poster URL after deletion.
@@ -29,7 +29,7 @@ This plan supplements [the master specification](docs/master-specification.md). 
 
 ## Movies, OMDb and schedule
 
-- The homepage contains every movie in Cards, Card List, or single-line List view, fetching beyond API page limits. Persist the selected view per member. Every view retains voting, movie details and deletion. Include Add a Movie beside Sort and view icons below it; omit the collection captions.
+- The homepage contains every movie in Cards, Card List, or single-line List view, fetching beyond API page limits. Persist the selected view per member. Every view retains voting and movie details, with Delete shown only for movies added by the current member. Include Add a Movie beside Sort and view icons below it; omit the collection captions.
 - Persist seven sorting modes: Most Votes, Least Votes, A-Z, Z-A, By Year Oldest, By Year Newest, My Votes. Vote counts and personal-vote groups use alphabetical ties; unknown years sort last in both directions.
 - Debounce OMDb search, cancel stale results, paginate and request only movie results. Cache search/detail enrichment in Supabase and save normalized metadata. Respect the configured free-key daily allowance. Missing director/poster information uses a fallback and does not block valid movies.
 - `add_movie` serializes by IMDb ID and atomically creates a new movie plus the adding member's vote. Return distinct visible outcomes: new movie added; existing movie and vote added; existing movie and already voted. Unique constraints prevent duplicates under concurrency.
@@ -60,7 +60,7 @@ This plan supplements [the master specification](docs/master-specification.md). 
 ## Acceptance checks
 
 - First claim, configured login, incorrect PIN, leading zeroes, numeric validation, refresh, logout/current-session behavior and Change PIN; simultaneous claims leave exactly one successful account/password.
-- Another member can delete the creator's movie or edit the creator's schedule, while cross-member votes/settings/PIN changes fail. Unrelated authenticated accounts cannot access shared content.
+- Only the original adding member can delete a movie, including after another member adds the same IMDb ID. Other members cannot delete it through the UI or direct database requests, or forge ownership. Owner deletion removes votes and preserves schedule snapshots. Any member can still edit another member's schedule; cross-member votes/settings/PIN changes fail. Unrelated authenticated accounts cannot access shared content.
 - Concurrent duplicate movie additions yield one movie and exactly the expected votes and notification for each request. Verify all seven sorts and persisted preferences.
 - More than four images and an image larger than 5 MB succeed when the provider limits allow; unsupported formats/provider oversize produce clear errors. Verify paste, image-only/mixed messages, failed upload, safe retry after ambiguous finalization, refreshed old media URLs and new-device reads.
 - Multiple-tab presence, disconnect/typing cleanup, current avatar/color in older messages, pagination/scroll behavior and uninterrupted chat state across wheel navigation.

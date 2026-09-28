@@ -43,10 +43,20 @@ export function MovieCollection() {
   }
   async function remove() {
     if (!deleting) return;
+    if (deleting.added_by_user_id !== me.id) {
+      notice("You can only remove movies you added.", true);
+      setDeleting(null);
+      return;
+    }
     setBusy(true);
     try {
-      const { error } = await supabase.from("movies").delete().eq("id", deleting.id);
+      const { data, error } = await supabase
+        .from("movies")
+        .delete()
+        .eq("id", deleting.id)
+        .select("id");
       if (error) throw error;
+      if (!data?.length) throw new Error("Movie not found or you cannot remove it.");
       notice(`${deleting.title} was removed.`);
       setDeleting(null);
       await refresh();
@@ -164,13 +174,15 @@ export function MovieCollection() {
                       <Poster url={movie.poster_url} title={movie.title} />
                     </button>
                   )}
-                  <button
-                    className="delete-movie icon-button"
-                    aria-label={`Delete ${movie.title}`}
-                    onClick={() => setDeleting(movie)}
-                  >
-                    <Trash2 size={17} />
-                  </button>
+                  {movie.added_by_user_id === me.id && (
+                    <button
+                      className="delete-movie icon-button"
+                      aria-label={`Delete ${movie.title}`}
+                      onClick={() => setDeleting(movie)}
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  )}
                   {isEligible(movie) && (
                     <span className="poster-wheel-tag">
                       <Check size={11} />

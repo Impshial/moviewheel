@@ -40,7 +40,7 @@ Name selection and six-digit PINs are the entire user-facing authentication flow
 
 Session cookies have no `Expires` or `Max-Age` on login or refresh. They use `SameSite=Lax` and HTTPS `Secure` in production. The browser Supabase client reads these cookies to use authenticated database, Storage, and Realtime APIs; they are not HttpOnly. No Auth tokens are persisted in localStorage. Browser session restoration can preserve session cookies after a restart. Explicit logout ends the current Supabase session, clears browser state and subscriptions, and preserves shared content; separate devices remain signed in.
 
-RLS recognizes only identities bound to the five profiles. All members can manage all shared movies and schedule entries. Only the authenticated owner can change their votes and settings. Application writes use session-derived RPCs, not client-supplied author identities. Privileged keys are server-only.
+RLS recognizes only identities bound to the five profiles. All members can add movies and manage all schedule entries. Only the member who originally added a movie can delete it; adding an existing movie adds a vote without transferring ownership. Delete controls appear only on that member's movies in every homepage view, and database policies enforce the same restriction. Only the authenticated owner can change their votes and settings. Authorship derives from the session, not client-supplied author identities. Privileged keys are server-only.
 
 ## Persistence and Realtime
 

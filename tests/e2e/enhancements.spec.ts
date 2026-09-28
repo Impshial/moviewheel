@@ -61,7 +61,8 @@ test("all three movie views retain voting and details and remember the choice", 
   await card.locator(".vote-button").click();
   await expect(card.locator(".vote-button")).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await card.getByRole("button", { name: "Delete Alien", exact: true }).click();
+  await expect(card.getByRole("button", { name: "Delete Alien", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Delete Before Sunrise", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText("Remove Movie?");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
@@ -101,6 +102,42 @@ test("all three movie views retain voting and details and remember the choice", 
   await expect(
     page.getByText("A few good picks. One great movie night.", { exact: true }),
   ).toHaveCount(0);
+});
+
+test("only the adding member sees Delete in every movie view and can remove it", async ({
+  page,
+}) => {
+  await login(page);
+  const views = page.getByRole("group", { name: "Movie view" });
+  for (const view of ["Cards", "Card List", "List"]) {
+    await views.getByRole("button", { name: view, exact: true }).click();
+    await expect(views.getByRole("button", { name: view, exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByRole("button", { name: /^Delete / })).toHaveCount(1);
+    await expect(
+      page.getByRole("button", { name: "Delete Before Sunrise", exact: true }),
+    ).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Delete Alien", exact: true })).toHaveCount(0);
+  }
+  const ownMovie = page.locator(".movie-card").filter({ hasText: "Before Sunrise" });
+  // RLS can return no rows without an error; don't show a false success.
+  await page.route("**/rest/v1/movies?**", async (route) => {
+    if (route.request().method() === "DELETE") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    } else await route.continue();
+  });
+  await ownMovie.getByRole("button", { name: "Delete Before Sunrise", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.locator(".toast")).toContainText("Movie not found or you cannot remove it.");
+  await expect(ownMovie).toHaveCount(1);
+  await page.unroute("**/rest/v1/movies?**");
+  await page.getByRole("dialog").getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(ownMovie).toHaveCount(0);
+  await expect(page.locator(".toast")).toContainText("Before Sunrise was removed.");
+  await page.reload();
+  await expect(page.locator(".movie-card")).toHaveCount(5);
 });
 
 test("seven sorts persist, account settings are wider, and the nearby add button opens search", async ({
