@@ -43,6 +43,7 @@ This plan supplements [the master specification](docs/master-specification.md). 
 - Show one equal-size colorful segment per movie with at least two votes, a pale rim, radial labels, fixed pointer and center Spin control. Votes never weight the probability.
 - Keep an unlabeled wheel visible with disabled Spin when no movies qualify. Omit the wheel eyebrow, descriptive tagline and empty-state sparkle icon.
 - Capture eligibility at spin start; select with unbiased browser randomness and animate to the exact corresponding segment. Finish against the snapshot, then apply subsequent collection changes. Support zero/one eligible movie and reduced motion.
+- Play brief applause at spin start and one click per segment boundary passing the pointer, synchronized with the wheel's easing curve. Play locally from the Spin gesture, clean up on navigation or hiding the page, and preserve spin behavior if audio is unavailable. Instant reduced-motion spins have no simulated crossing clicks.
 - Spins create no database/history records, notifications, synchronized animation, scheduling, deletion or watched-state changes. Display the local selected movie with no post-spin actions.
 
 ## Chat, uploads and transient signals

@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useWorkspace } from "@/features/workspace/provider";
 import { isEligible, randomIndex, targetRotation, WHEEL_MIN_VOTES } from "@/lib/domain";
 import type { Movie } from "@/lib/types";
+import { WHEEL_EASING, type WheelSpin } from "@/lib/wheel-timing";
+import { WheelSounds } from "./sounds";
 
 const COLORS = [
   "#ff6b61",
@@ -24,6 +26,9 @@ export function MovieWheel() {
   const [winner, setWinner] = useState<Movie | null>(null);
   const [duration, setDuration] = useState(6500);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sounds = useRef<WheelSounds | null>(null);
+  const pendingSound = useRef<WheelSpin | null>(null);
+  const rotor = useRef<SVGSVGElement | null>(null);
   const live = movies
     .filter(isEligible)
     .sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id));
@@ -37,23 +42,44 @@ export function MovieWheel() {
       ? Math.floor(rotation / 360) * 360 +
         ((360 - ((restingWinner + 0.5) * 360) / entries.length) % 360)
       : rotation;
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const audio = new WheelSounds();
+    sounds.current = audio;
+    const onVisibility = () => {
+      if (document.hidden) audio.stop();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
       if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
+      pendingSound.current = null;
+      sounds.current = null;
+      document.removeEventListener("visibilitychange", onVisibility);
+      audio.dispose();
+    };
+  }, []);
+  useLayoutEffect(() => {
+    if (!spinning || !pendingSound.current || !rotor.current) return;
+    // Flush the committed transform so the CSS transition and audio share a start.
+    void window.getComputedStyle(rotor.current).transform;
+    sounds.current?.start(pendingSound.current);
+    pendingSound.current = null;
+  }, [spinning, rotation]);
   function spin() {
     if (spinning || !live.length) return;
     const captured = [...live];
     const selected = randomIndex(captured.length);
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const ms = reduced ? 0 : 6500;
+    const nextRotation = targetRotation(visibleRotation, selected, captured.length);
+    const sound = { from: visibleRotation, to: nextRotation, count: captured.length, duration: ms };
+    sounds.current?.unlock();
+    pendingSound.current = ms ? sound : null;
+    if (!ms) sounds.current?.start(sound);
     setDuration(ms);
     setWinner(null);
     setSnapshot(captured);
     setSpinning(true);
-    setRotation(targetRotation(visibleRotation, selected, captured.length));
+    setRotation(nextRotation);
     timer.current = setTimeout(() => {
       setWinner(captured[selected]);
       setSpinning(false);
@@ -74,12 +100,14 @@ export function MovieWheel() {
           <div className="wheel-stage">
             <div className="wheel-pointer" aria-hidden="true" />
             <svg
+              ref={rotor}
               viewBox="0 0 600 600"
               className="wheel-rotor"
               aria-hidden="true"
               style={{
                 transform: `rotate(${visibleRotation}deg)`,
                 transitionDuration: spinning ? `${duration}ms` : "0ms",
+                transitionTimingFunction: WHEEL_EASING,
               }}
             >
               {segments.map((movie, index) => {
