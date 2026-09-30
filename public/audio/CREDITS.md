@@ -1,10 +1,13 @@
 # Wheel sounds
 
-`spin-applause.wav` is a 2.8-second excerpt (4.0–6.8 seconds) of
-[Sound Effects – Applause after a concert](https://commons.wikimedia.org/wiki/File:Sound_Effects_-_Applause_after_a_concert.ogg)
-by [Amada44](https://commons.wikimedia.org/wiki/User:Amada44), released under
+`spin-applause-small-group.mp3` is the complete 4.486-second recording
+[Small applause](https://freesound.org/people/Breviceps/sounds/462362/)
+by [Breviceps](https://freesound.org/people/Breviceps/), released under
 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 
-Converted to mono PCM WAV at 22,050 Hz, normalized and faded in/out. The source
-recording's SHA-1 is `4e9a9f7235b36cc46702f40934d8949449cbeca4`.
+Bundled unchanged from Freesound's [high-quality MP3 preview](https://cdn.freesound.org/previews/462/462362_9159316-hq.mp3),
+with stereo channels and a 44,100 Hz sample rate preserved. It records a small group
+of about 30 people clapping. SHA-256:
+`0297dc19883bf2ffd6ea2634101eb744c6d52acb588a7b8eab1760d6ebd543ba`.
+
 The short mechanical click is synthesized locally using Web Audio.

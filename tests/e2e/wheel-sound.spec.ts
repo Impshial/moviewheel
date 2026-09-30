@@ -1,6 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 
-type Sound = { duration: number; when: number; at: number; offset: number; stopped: boolean };
+type Sound = {
+  duration: number;
+  channels: number;
+  sampleRate: number;
+  when: number;
+  at: number;
+  offset: number;
+  stopped: boolean;
+};
 type AudioState = { wheelSounds: Sound[]; closedAudio: number };
 
 async function recordSounds(page: Page) {
@@ -15,6 +23,8 @@ async function recordSounds(page: Page) {
     AudioBufferSourceNode.prototype.start = function (when = 0, offset = 0, duration?: number) {
       const sound = {
         duration: this.buffer?.duration ?? 0,
+        channels: this.buffer?.numberOfChannels ?? 0,
+        sampleRate: this.buffer?.sampleRate ?? 0,
         when,
         offset,
         at: this.context.currentTime,
@@ -43,7 +53,7 @@ async function openWheel(page: Page) {
   await page.getByLabel("PIN", { exact: true }).fill("001234");
   await page.getByRole("button", { name: "Enter", exact: true }).click();
   const loaded = page.waitForResponse(
-    (response) => response.url().endsWith("/audio/spin-applause.wav") && response.ok(),
+    (response) => response.url().endsWith("/audio/spin-applause-small-group.mp3") && response.ok(),
   );
   await page.getByRole("link", { name: "Spin the Wheel" }).click();
   await loaded;
@@ -82,7 +92,9 @@ test("spin starts applause, schedules every crossing, and cancels sound on leavi
     clicks[2].when - clicks[1].when,
   );
   const applause = scheduled.find((sound) => sound.duration > 1)!;
-  expect(applause.duration).toBeCloseTo(2.8, 2);
+  expect(applause.duration).toBeCloseTo(4.486, 2);
+  expect(applause.channels).toBe(2);
+  expect(applause.sampleRate).toBe(44100);
   expect(applause.offset).toBeLessThan(0.5);
   await expect(page.getByText("THE WHEEL HAS SPOKEN")).toBeVisible({ timeout: 12000 });
   expect((await sounds(page)).filter((sound) => sound.duration > 1)).toHaveLength(1);

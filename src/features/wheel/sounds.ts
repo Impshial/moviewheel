@@ -13,12 +13,12 @@ export class WheelSounds {
 
   constructor() {
     // Decode ahead of the gesture without opening a live audio device or playing.
-    this.applause = fetch("/audio/spin-applause.wav", { signal: this.abort.signal })
+    this.applause = fetch("/audio/spin-applause-small-group.mp3", { signal: this.abort.signal })
       .then((response) => {
         if (!response.ok) throw new Error("Applause unavailable");
         return response.arrayBuffer();
       })
-      .then((bytes) => new OfflineAudioContext(1, 1, 22050).decodeAudioData(bytes))
+      .then((bytes) => new OfflineAudioContext(2, 1, 44100).decodeAudioData(bytes))
       .catch(() => null);
   }
 
@@ -55,7 +55,7 @@ export class WheelSounds {
     const applause = await this.applause;
     if (!applause || !active() || context.state !== "running") return;
     const elapsed = (performance.now() - startedAt) / 1000;
-    if (elapsed < applause.duration) this.source(applause, context.currentTime, elapsed, 0.65);
+    if (elapsed < applause.duration) this.source(applause, context.currentTime, elapsed, 0.8);
   }
 
   private source(buffer: AudioBuffer, when: number, offset = 0, volume = 1) {
