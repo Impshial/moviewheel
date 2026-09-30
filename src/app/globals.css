@@ -1529,9 +1529,39 @@ legend {
   text-align: center;
 }
 .wheel-entries ul {
-  columns: 2;
-  line-height: 1.9;
-  padding-left: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 14px;
+  padding: 0;
+  margin: 10px 0 0;
+  list-style: none;
+}
+.wheel-selection-hint {
+  margin-top: 10px;
+  text-align: center;
+  color: var(--muted);
+}
+.wheel-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 0;
+  line-height: 1.5;
+  color: var(--text);
+  cursor: pointer;
+}
+.wheel-option input {
+  flex-shrink: 0;
+}
+.wheel-option span {
+  overflow-wrap: anywhere;
+}
+.wheel-option input:not(:checked) + span {
+  color: var(--muted);
+}
+.wheel-option:has(input:disabled) {
+  cursor: default;
 }
 
 /* White, continuous conversation. */
@@ -2431,6 +2461,12 @@ legend {
   }
   .wheel-entries {
     padding-top: 6px;
+  }
+  .wheel-entries ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wheel-option {
+    min-height: 44px;
   }
   .empty-collection {
     min-height: 390px;

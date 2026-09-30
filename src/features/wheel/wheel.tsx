@@ -20,6 +20,7 @@ const COLORS = [
 ];
 export function MovieWheel() {
   const { movies, loading } = useWorkspace();
+  const [excluded, setExcluded] = useState<Set<string>>(() => new Set());
   const [snapshot, setSnapshot] = useState<Movie[] | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -29,10 +30,12 @@ export function MovieWheel() {
   const sounds = useRef<WheelSounds | null>(null);
   const pendingSound = useRef<WheelSpin | null>(null);
   const rotor = useRef<SVGSVGElement | null>(null);
-  const live = movies
+  const eligible = movies
     .filter(isEligible)
     .sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id));
-  const entries = spinning && snapshot ? snapshot : live;
+  const live = eligible.filter((movie) => !excluded.has(movie.id));
+  const options = spinning && snapshot ? snapshot : eligible;
+  const entries = options.filter((movie) => !excluded.has(movie.id));
   const segments = entries.length
     ? entries
     : COLORS.map((_, index) => ({ id: `empty-${index}`, title: "" }));
@@ -64,6 +67,16 @@ export function MovieWheel() {
     sounds.current?.start(pendingSound.current);
     pendingSound.current = null;
   }, [spinning, rotation]);
+  function includeMovie(id: string, included: boolean) {
+    if (spinning) return;
+    setExcluded((previous) => {
+      const next = new Set(previous);
+      if (included) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setWinner(null);
+  }
   function spin() {
     if (spinning || !live.length) return;
     const captured = [...live];
@@ -77,7 +90,7 @@ export function MovieWheel() {
     if (!ms) sounds.current?.start(sound);
     setDuration(ms);
     setWinner(null);
-    setSnapshot(captured);
+    setSnapshot([...eligible]);
     setSpinning(true);
     setRotation(nextRotation);
     timer.current = setTimeout(() => {
@@ -158,22 +171,38 @@ export function MovieWheel() {
               {spinning ? "…" : "Spin"}
             </button>
           </div>
-          {entries.length > 0 && (
+          {options.length > 0 && (
             <details className="wheel-entries">
               <summary>
-                See the {entries.length} {entries.length === 1 ? "movie" : "movies"} on the wheel
+                Movies on the wheel ({entries.length} of {options.length})
               </summary>
+              <p className="wheel-selection-hint">Selections reset when you leave this page.</p>
               <ul>
-                {entries.map((m) => (
-                  <li key={m.id}>{m.title}</li>
+                {options.map((movie) => (
+                  <li key={movie.id}>
+                    <label className="wheel-option">
+                      <input
+                        type="checkbox"
+                        checked={!excluded.has(movie.id)}
+                        disabled={spinning}
+                        aria-label={`Include ${movie.title}`}
+                        onChange={(event) => includeMovie(movie.id, event.target.checked)}
+                      />
+                      <span>{movie.title}</span>
+                    </label>
+                  </li>
                 ))}
               </ul>
             </details>
           )}
           {!entries.length && (
             <div className="wheel-empty">
-              <h2>No movies have enough votes yet.</h2>
-              <p>A movie needs at least {WHEEL_MIN_VOTES} votes to appear on the wheel.</p>
+              <h2>{options.length ? "No movies selected." : "No movies have enough votes yet."}</h2>
+              <p>
+                {options.length
+                  ? "Check at least one movie to spin."
+                  : `A movie needs at least ${WHEEL_MIN_VOTES} votes to appear on the wheel.`}
+              </p>
             </div>
           )}
         </>
