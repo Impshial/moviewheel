@@ -75,6 +75,12 @@ export function MovieCollection() {
     else await refresh();
   }
   const currentSelection = selected && (movies.find((m) => m.id === selected.id) || selected);
+  const selectedVoters =
+    currentSelection?.movie_votes
+      .map(
+        (vote) => profiles.find((profile) => profile.id === vote.user_id)?.display_name ?? "Member",
+      )
+      .sort((a, b) => a.localeCompare(b)) ?? [];
   return (
     <section className="collection">
       <div className="section-heading">
@@ -287,8 +293,11 @@ export function MovieCollection() {
             <MovieDetails movie={currentSelection} />
             <p className="muted">
               Added by{" "}
-              {profiles.find((p) => p.id === currentSelection.added_by_user_id)?.display_name} ·{" "}
-              {currentSelection.movie_votes.length} votes
+              {profiles.find((p) => p.id === currentSelection.added_by_user_id)?.display_name ??
+                "Member"}{" "}
+              · {selectedVoters.length} {selectedVoters.length === 1 ? "vote" : "votes"}
+              <br />
+              Voted by: {selectedVoters.join(", ") || "No one yet"}
             </p>
           </>
         )}
